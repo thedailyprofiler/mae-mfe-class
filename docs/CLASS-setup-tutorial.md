@@ -21,6 +21,55 @@
 
 You'll do four installs (Node, Git, VS Code, Claude Code), then three setups (bridge, data, dashboard).
 
+⏱️ **Plan ~60–90 minutes** the first time. Go slow. You can't break anything — if a step fails,
+the Troubleshooting table (Part 10) or just asking Claude *"that didn't work, here's what I saw: …"*
+will get you unstuck.
+
+---
+
+## Part 0.5 — Before you start (read this first)
+
+### ✅ What you need (get these ready)
+- A **Windows PC** (this guide is Windows-first).
+- A **Claude account that can use Claude Code.** Claude Code is **not free** — you need either a
+  **Claude Pro or Max subscription** (claude.ai → upgrade) *or* **Anthropic API credits**
+  (console.anthropic.com → add billing). Pro is the simplest for a student. Have your login ready.
+- A **TradingView account** + the **TradingView *Desktop* app** (not just the website) —
+  download at tradingview.com/desktop. A free TradingView account works.
+- **Access to the "Gunship Lite" indicator.** This is a **private / invite-only** bootcamp
+  indicator — you can't just search for it. **Your instructor must grant your TradingView
+  username access**, after which it appears under *Indicators → Invite-only scripts*. Ask for
+  this before class.
+
+### 🖥️ Terminal 101 (the black window where you type commands)
+- **PowerShell** is the "terminal." Open it: press the **Start** key, type **PowerShell**, press
+  **Enter**. A window opens with a prompt like `PS C:\Users\You>`.
+- To **run a command**: click in the window, **paste** (right-click, or Ctrl+V), press **Enter**.
+- **Don't type the `PS C:\…>` part** — that's just the prompt. Only type/paste the command after it.
+- If a command "isn't recognized," you usually just need to **close and reopen** PowerShell so it
+  sees a newly-installed tool. When in doubt, restart the PC.
+
+### 🤖 Talking to Claude (the permission flow)
+- You give Claude requests in **plain English** and press Enter. It replies, and when it wants to
+  **run a command or edit a file it asks permission** — you'll see options like *Yes / Yes, and
+  don't ask again / No*. Read what it's about to do, then pick **Yes** (or "don't ask again" for
+  safe, repeated things like `npm` or `git`).
+- **Esc** interrupts Claude mid-action. **Ctrl+C** twice exits Claude.
+- If something goes wrong, just tell it: *"that errored — here's the message: …"* and it'll fix it.
+
+### 📖 Mini-glossary (scary words, demystified)
+| Word | Plain meaning |
+|---|---|
+| **terminal / PowerShell** | the window where you type commands |
+| **npm** | the installer that comes with Node; fetches code packages |
+| **repo (repository)** | a project folder tracked by Git |
+| **clone** | download a copy of a repo to your PC |
+| **commit** | save a snapshot of your changes (with a message) |
+| **push** | upload your commits to GitHub |
+| **MCP** | the plug-in system that lets Claude use the TradingView bridge |
+| **CDP / debug port** | the "open door" on TradingView that lets the bridge read your chart |
+| **MAE / MFE** | worst move against you / best move for you, per trade |
+
 ---
 
 ## Part 1 — Install the prerequisites (one time)
@@ -64,12 +113,17 @@ claude --version
 ```
 
 ### 2.2 Make a workspace folder & open it
+In PowerShell, paste these **one line at a time** (`~` means your user folder):
 ```powershell
-mkdir C:\Users\%USERNAME%\Desktop\dev
-cd C:\Users\%USERNAME%\Desktop\dev
+mkdir ~\Desktop\dev
+cd ~\Desktop\dev
 claude
 ```
-The first run asks you to **log in** — a browser opens, sign in with your Anthropic / Claude account (a Claude Pro/Max subscription or API key works), approve, come back.
+The first run asks you to **log in** — a browser opens, sign in with your Claude account (a Claude
+Pro/Max subscription or API key — see Part 0.5), approve, come back to PowerShell.
+
+> ✅ **You'll know it worked when** Claude shows its welcome prompt and is waiting for you to type
+> a request, inside the `dev` folder.
 
 ### 2.3 (Optional) Use it inside VS Code
 - In VS Code: **Extensions** (left bar) → search **"Claude Code"** → Install.
@@ -86,32 +140,40 @@ The first run asks you to **log in** — a browser opens, sign in with your Anth
 This lets Claude read your chart. You need the **TradingView Desktop** app installed
 and logged in (download from tradingview.com if you don't have it).
 
-### 3.1 Let Claude install the bridge — paste this prompt:
+### 3.1 Let Claude install the bridge — paste this prompt (Claude figures out your folders):
 ```
 Install the TradingView MCP bridge for me. Clone https://github.com/tradesdontlie/tradingview-mcp.git
-into C:\Users\<ME>\Desktop\dev\tradingview-mcp, run npm install in it, then add it to my
-Claude Code MCP config at ~/.claude/.mcp.json as a server named "tradingview" pointing at
-its src/server.js (merge it in, don't overwrite other servers). Then tell me exactly how to
-launch TradingView with the debug port and how to verify the connection.
+into a folder called tradingview-mcp inside my Desktop\dev folder, run npm install in it, then add
+it to my Claude Code MCP config at ~/.claude/.mcp.json as a server named "tradingview" pointing at
+its src/server.js (merge it in — don't overwrite other servers). Then tell me exactly how to launch
+TradingView with the debug port on 9333 and how to verify the connection.
 ```
-*(Replace `<ME>` with your Windows username.)*
+> ✅ **You'll know it worked when** Claude reports the clone + install succeeded and shows you the
+> `.mcp.json` it wrote.
 
-### 3.2 Launch TradingView with the debug port
-Close TradingView fully, then in PowerShell:
+### 3.2 Launch TradingView with the debug port (9333)
+**Close TradingView completely first** (right-click its taskbar icon → Close window). The bridge
+repo ships an auto-detecting launcher — in PowerShell:
 ```powershell
-& "$env:LOCALAPPDATA\TradingView\TradingView.exe" --remote-debugging-port=9333
+cd ~\Desktop\dev\tradingview-mcp
+.\scripts\launch_tv_debug.bat 9333
 ```
-> We use port **9333** (the data-collection scripts default to it). Log in and open a chart.
+> This finds TradingView wherever Windows installed it (including the Microsoft Store version) and
+> opens it with the "debug door" on port **9333**. If it says it can't find TradingView, paste the
+> error to Claude and ask it to launch TradingView in debug mode for you. **Then log in and open any
+> chart.** (We use 9333 because the collection scripts default to it.)
 
 ### 3.3 Restart Claude Code so the bridge loads
-Exit Claude (`Ctrl+C` twice), then `claude` again in your `dev` folder.
+A new bridge only connects when Claude starts. Exit Claude (`Ctrl+C` twice), then run `claude` again
+from your `dev` folder.
 
 ### 3.4 Verify — paste:
 ```
 Check the TradingView bridge connection and tell me if it's working.
 ```
-You want to see `success: true` / `cdp_connected: true`. If not, TradingView isn't running
-with the debug port — redo 3.2.
+> ✅ **You'll know it worked when** you see `success: true` and `cdp_connected: true`. If you see
+> `cdp_connected: false`, TradingView isn't running with the debug door — redo 3.2 (close it fully
+> first), then restart Claude.
 
 ---
 
@@ -120,8 +182,12 @@ with the debug port — redo 3.2.
 The bridge can **read** the indicator but **writing to it blanks the table** — so *you*
 configure it in the TradingView UI; Claude only reads.
 
+> **First:** Gunship Lite is **invite-only** (Part 0.5). Once your instructor grants your
+> TradingView username access, it shows up under **Indicators → Invite-only scripts**. If you
+> don't see it there, you don't have access yet — ask your instructor.
+
 1. On a **5-minute** chart of your instrument (e.g. `CME_MINI:MNQ1!`), add the **Gunship Lite
-   – Bootcamp** indicator (Indicators → search → add).
+   – Bootcamp** indicator (Indicators → **Invite-only scripts** → click it to add).
 2. Open its settings (gear) and set:
    - **Move** (`in_0`): e.g. `1800 Break`, `0300 Break`, `Market Open Break`, `Lunch Break`.
    - **Activation** (`in_75`): `Breakout`, `Front Run`, or `Pullback`.
@@ -179,10 +245,10 @@ data in Parts 4–5). **Path B** builds it with Claude from scratch. Pick A for 
 ### Path A — clone & run the class dashboard (public, no login needed)
 Paste:
 ```
-Clone https://github.com/thedailyprofiler/mae-mfe-class.git into C:\Users\<ME>\Desktop\dev,
-run npm install, then start it with npm run dev:full and tell me the local URL to open.
+Clone https://github.com/thedailyprofiler/mae-mfe-class.git into my Desktop\dev folder, run
+npm install, then start it with npm run dev:full and tell me the local URL to open.
 ```
-Open **http://localhost:5185**. It starts **empty** — that's expected; this public copy ships
+Open **http://localhost:5185** in your browser. It starts **empty** — that's expected; this public copy ships
 without trade data so you learn to collect your own (Parts 4–5). Once you've swept a move, it
 shows up automatically. *(Your instructor may instead give you a copy that's pre-loaded with
 sample data.)*
@@ -275,7 +341,11 @@ Drag that SOP file (or `HANDOFF.md`) back into any future Claude session to rest
 
 | Problem | Fix |
 |---|---|
+| Claude won't let me in / "no access" | Claude Code needs a paid plan — a **Claude Pro/Max** subscription (claude.ai) or **API credits** (console.anthropic.com). See Part 0.5. |
 | `claude` not found | Restart PowerShell; re-run `npm install -g @anthropic-ai/claude-code`. |
+| Gunship Lite not in my indicators | It's **invite-only** — your instructor must add your TradingView username; then it's under *Indicators → Invite-only scripts*. |
+| `launch_tv_debug.bat` not recognized | Run it from inside the bridge folder: `cd ~\Desktop\dev\tradingview-mcp` first. Or ask Claude to launch TradingView in debug mode. |
+| "command not recognized" generally | Close & reopen PowerShell (it needs to see newly-installed tools); if still stuck, restart the PC. |
 | Bridge `cdp_connected: false` | Relaunch TradingView with `--remote-debugging-port=9333`, then restart Claude. |
 | Indicator table blank | A write hit the chart — press **F5** in TradingView and reconfigure the indicator. |
 | Dashboard won't start | Node too old — install Node 22.5+; re-run `npm install`. |
