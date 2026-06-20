@@ -173,16 +173,19 @@ sweep "1800 Front Run" (key 1800FR) across all 6 instruments and load + verify.
 
 ## Part 6 — Get the dashboard running
 
-Two paths. **Path A (fastest)** clones the finished class repo (it ships with the database).
-**Path B** builds it with Claude. Pick A for the class.
+Two paths. **Path A (fastest)** clones the public class repo (code only — you collect your own
+data in Parts 4–5). **Path B** builds it with Claude from scratch. Pick A for the class.
 
-### Path A — clone & run the class dashboard
-Your instructor adds you to the private repo `thedailyprofiler/Micks-MAE-MFE`. Then paste:
+### Path A — clone & run the class dashboard (public, no login needed)
+Paste:
 ```
-Clone https://github.com/thedailyprofiler/Micks-MAE-MFE.git into C:\Users\<ME>\Desktop\dev,
+Clone https://github.com/thedailyprofiler/mae-mfe-class.git into C:\Users\<ME>\Desktop\dev,
 run npm install, then start it with npm run dev:full and tell me the local URL to open.
 ```
-Open **http://localhost:5185** — it loads with the real bundled data.
+Open **http://localhost:5185**. It starts **empty** — that's expected; this public copy ships
+without trade data so you learn to collect your own (Parts 4–5). Once you've swept a move, it
+shows up automatically. *(Your instructor may instead give you a copy that's pre-loaded with
+sample data.)*
 
 ### Path B — build it with Claude (the workflow we used)
 This is how the dashboard was actually built — feature by feature, in plain English. Example
