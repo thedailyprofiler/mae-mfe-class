@@ -24,5 +24,4 @@ pnpm-debug.log*
 *.njsproj
 *.sln
 *.sw?
-public/videos/*.mp4
-public/videos/**/*.mp4
+# deep-dive / how-to videos are versioned via Git LFS (see .gitattributes)
