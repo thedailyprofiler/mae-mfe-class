@@ -199,7 +199,8 @@ function VideoModal({ dive, onClose }: { dive: DeepDive; onClose: () => void }) 
             className="text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] text-[15px] leading-none px-1">✕</button>
         </div>
         {/* eslint-disable-next-line jsx-a11y/media-has-caption — caption track IS provided below */}
-        <video controls autoPlay preload="metadata" className="w-full max-h-[70vh] bg-black">
+        {/* No autoPlay: browsers mute autoplay, so the user pressing play guarantees sound. */}
+        <video controls preload="metadata" className="w-full max-h-[70vh] bg-black">
           <source src={dive.src} type="video/mp4" />
           <track kind="captions" srcLang="en" label="English" src={dive.vtt} default />
         </video>
