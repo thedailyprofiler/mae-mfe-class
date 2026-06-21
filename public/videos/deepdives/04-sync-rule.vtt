@@ -1,0 +1,57 @@
+WEBVTT
+
+1
+00:00:03.600 --> 00:00:16.008
+There are exactly two settings on this dashboard that
+change everything else. Set them once, and every chart,
+every table, every recommendation recomputes around them.
+This is the one rule the whole machine runs on.
+
+2
+00:00:16.608 --> 00:00:35.448
+The first is Min Cashflow. In plain English, it's your
+profit target, the move in your favor you'd be happy to
+bank as a win. The rule is dead simple. A trade counts as
+a win the moment its MFE, its best favorable move, reaches
+this number. Set it here, and it instantly defines what a
+winner even is across your entire history.
+
+3
+00:00:36.048 --> 00:00:53.928
+The second setting is Max MAE. That is your stop. And it
+works in one direction only. It never cancels a win. If a
+trade already reached your target, it stays a win, period.
+It only protects your losers. A losing trade can never
+cost you more than this. Set it to zero, and you're
+trading with no stop at all.
+
+4
+00:00:54.528 --> 00:01:08.376
+Then there's Attempts per Day, a lens for setups you take
+more than once in a session. Count them all, just the
+first, the first few, or only the second attempt. It never
+deletes a single trade. It just changes which ones the
+math is looking at right now.
+
+5
+00:01:08.976 --> 00:01:31.392
+Now here's why this matters so much. These aren't just
+inputs. They are the single source of truth. Change your
+target or your stop, and watch. The win rate, the strike
+rates, the expected values, the prop simulator, every
+recommendation, all of it recomputes at once, off this one
+rule. Nothing on the dashboard can ever disagree with
+anything else, because everything reads from right here.
+
+6
+00:01:31.992 --> 00:01:47.376
+So before you read another number anywhere on this screen,
+set these two honestly, to the way you actually trade.
+Your real target, your real stop. Get them right, and
+everything downstream is the truth about your edge. Get
+them wrong, and you're studying a strategy you don't even
+trade.
+
+7
+00:01:47.976 --> 00:01:51.720
+One target. One stop. And the entire dashboard obeys.

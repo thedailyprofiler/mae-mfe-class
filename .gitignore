@@ -7,10 +7,6 @@ dist-ssr
 # SQLite storage (local data — not committed)
 server/data/
 
-# Collected trade data — kept out of the public class copy
-data-backups/
-scripts/collection/windows.jsonl
-
 # Logs
 logs
 *.log
@@ -29,3 +25,4 @@ pnpm-debug.log*
 *.sln
 *.sw?
 public/videos/*.mp4
+public/videos/**/*.mp4

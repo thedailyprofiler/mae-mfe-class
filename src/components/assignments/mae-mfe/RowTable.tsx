@@ -9,6 +9,7 @@ import { ChevronLeft, ChevronRight, CornerDownRight, Plus, SkipForward, Trash2 }
 import type { DerivedRow, RawRow } from '../../../lib/maeMfeStats';
 import { dollarTone, fmtDollars } from './format';
 import { NumericInput } from './NumericInput';
+import { VideoButton, type DeepDiveSlug } from './SectionVideo';
 
 export interface RowTableProps {
   rows: RawRow[];
@@ -27,6 +28,8 @@ export interface RowTableProps {
   pageSize?: number;
   /** Ledger header label. Defaults to "Trade Log". */
   title?: string;
+  /** Optional "▶ how to use" deep-dive shown beside the title. */
+  video?: DeepDiveSlug;
 }
 
 const cellInput =
@@ -45,6 +48,7 @@ export function RowTable({
   readOnly,
   pageSize = 10,
   title = 'Trade Log',
+  video,
 }: RowTableProps) {
   const [page, setPage] = useState(0);
   const totalPages = Math.max(1, Math.ceil(rows.length / pageSize));
@@ -63,6 +67,7 @@ export function RowTable({
           <span className="text-[10px] font-[var(--font-mono)] font-medium uppercase tracking-[0.18em] text-[var(--color-text-secondary)]">
             {title}
           </span>
+          {video && <VideoButton slug={video} />}
         </div>
         {!readOnly && (
           <div className="flex items-center gap-1.5">

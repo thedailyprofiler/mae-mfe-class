@@ -13,9 +13,10 @@
 import type { DatasetDashboard as DashType } from '../../../lib/maeMfeStats';
 import { dollarTone, fmtDollars, fmtPct, fmtRatio } from './format';
 import { InfoTip } from './InfoTip';
+import { VideoButton, type DeepDiveSlug } from './SectionVideo';
 
-/** Mono uppercase section label with a gold tick. */
-export function SectionLabel({ children, info }: { children: React.ReactNode; info?: string }) {
+/** Mono uppercase section label with a gold tick. Optional ⓘ help + ▶ how-to video. */
+export function SectionLabel({ children, info, video }: { children: React.ReactNode; info?: string; video?: DeepDiveSlug }) {
   return (
     <div className="flex items-center gap-2 mb-2.5">
       <span className="w-[3px] h-[11px] bg-[var(--color-accent)]" aria-hidden />
@@ -23,6 +24,7 @@ export function SectionLabel({ children, info }: { children: React.ReactNode; in
         {children}
       </span>
       {info && <InfoTip id={info} />}
+      {video && <VideoButton slug={video} />}
     </div>
   );
 }
@@ -84,7 +86,7 @@ export function DashboardCore({ dashboard: d }: { dashboard: DashType }) {
       {/* Distribution stats — 3 columns */}
       <div className="grid grid-cols-3 divide-x divide-[var(--color-border)]">
         <div className="pr-4">
-          <SectionLabel info="riskMae">Risk · MAE</SectionLabel>
+          <SectionLabel info="riskMae" video="stop-target-entry">Risk · MAE</SectionLabel>
           <MiniStat label="Average" value={fmtPct(d.risk.average)} />
           <MiniStat label="Median" value={fmtPct(d.risk.median)} />
           <MiniStat label="70th %ile" value={fmtPct(d.risk.percentile70)} />
@@ -128,7 +130,7 @@ export function DashboardCore({ dashboard: d }: { dashboard: DashType }) {
 
       {/* Strike rates with bars */}
       <div className="border-t border-[var(--color-border)] pt-3.5">
-        <SectionLabel info="mfeStrikeRates">MFE Strike Rates</SectionLabel>
+        <SectionLabel info="mfeStrikeRates" video="strike-rates">MFE Strike Rates</SectionLabel>
         <table className="w-full text-[12px] tabular-nums">
           <thead>
             <tr>

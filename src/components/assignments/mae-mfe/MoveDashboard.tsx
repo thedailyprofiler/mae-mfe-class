@@ -24,6 +24,7 @@ import { firstTradingDateOnOrAfter, nextTradingDate } from '../../../lib/trading
 import { DashboardBand, DashboardCore } from './DatasetDashboard';
 import { ComparePanel } from './ComparePanel';
 import { RowTable } from './RowTable';
+import { VideoButton } from './SectionVideo';
 import { NumericInput } from './NumericInput';
 import { dollarTone, fmtDollars } from './format';
 import { OOS_KEYS, resolveStudy, type OosKey, type SampleKey } from './maeMfeDocument';
@@ -435,6 +436,7 @@ export function MoveDashboard({
         <span className="flex items-center justify-center w-5 h-5 rounded-full bg-[var(--color-accent)] text-black font-[var(--font-mono)] text-[10px] font-bold shrink-0">3</span>
         <span className="text-[10px] uppercase tracking-[0.16em] text-[var(--color-accent)] font-semibold">You set your risk</span>
         <span className="text-[10px] text-[var(--color-text-secondary)]">— fine-tune contracts, MFE target, Max MAE &amp; attempts yourself, then press Apply.</span>
+        <VideoButton slug="sync-rule" />
       </div>
 
       {/* ─── TOOLBAR — setup inputs (price is automatic) ──────────── */}
@@ -664,6 +666,7 @@ export function MoveDashboard({
             <div className="p-4 bg-[var(--color-bg-inset)]/40">
               <RowTable
                 title={rowTableTitle}
+                video="mae-mfe-basics"
                 rows={activeRows}
                 derived={activeDerived}
                 refPrice={repPrice}

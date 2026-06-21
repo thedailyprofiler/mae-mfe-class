@@ -1,0 +1,59 @@
+WEBVTT
+
+1
+00:00:03.600 --> 00:00:11.280
+Before any of the fancy tables make sense, you only need
+two numbers. Just two. Get these, and the entire dashboard
+opens up.
+
+2
+00:00:11.880 --> 00:00:31.632
+Every trade does the same thing. You get in, price wiggles
+around, and eventually the trade is over. While it's open,
+it travels some distance against you, and some distance in
+your favor. Those two distances are the only things this
+dashboard truly cares about. Here's the raw trade log,
+every trade you've recorded, with both numbers logged on
+each one.
+
+3
+00:00:32.232 --> 00:00:47.424
+The first number is MAE, maximum adverse excursion. The
+worst the trade went against you before it resolved. Think
+of it as the heat you had to sit through to stay in the
+trade. That is your risk. Summed across all your trades,
+it lives right here, in Risk and MAE.
+
+4
+00:00:48.024 --> 00:01:01.992
+The second number is MFE, maximum favorable excursion. The
+best the trade ran in your favor before it ended. That's
+the profit that was on the table, whether you grabbed it
+or not. Across your trades, it's summarized here, in
+Profit and MFE.
+
+5
+00:01:02.592 --> 00:01:18.552
+Both are stored as a percent of price, never as dollars.
+Here's why that matters so much. A tenth of a percent
+means the same thing on a twenty thousand dollar Nasdaq
+contract and a two thousand dollar Russell contract.
+Percent makes every trade, on every instrument, finally
+comparable.
+
+6
+00:01:19.152 --> 00:01:44.064
+A trader named John Sweeney built an entire method on
+this. He realized that whether one single trade won or
+lost is almost noise. But how far your trades typically
+run against you, and how far they run for you, across a
+hundred trades, that's signal. That's a measurable edge.
+Your stop comes from the MAE side. Your target comes from
+the MFE side. And everything else on this dashboard is
+just these two numbers, sliced a hundred different ways.
+
+7
+00:01:44.664 --> 00:01:51.552
+Two numbers per trade. How far against you, and how far
+for you. Log them honestly, and the rest of the machine
+does the work.
