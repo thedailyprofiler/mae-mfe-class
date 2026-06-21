@@ -22,7 +22,17 @@ export interface SetupRecommenderPanelProps {
   onApply: (r: SetupRec) => void;
   /** The config currently applied to the selected entry — used to show which path is active. */
   current?: { variantKey: string; minCf: number; maxMae: number; contracts: number };
+  /** Cross-lab Send→ : load this single move into any lab. */
+  onApplyBasketTo?: (keys: string[], lab: 'compare' | 'cycle' | 'montecarlo' | 'propsim' | 'portfolio', source?: string) => void;
 }
+
+const SETUP_TARGETS: { lab: 'compare' | 'cycle' | 'montecarlo' | 'propsim' | 'portfolio'; label: string }[] = [
+  { lab: 'compare', label: 'Compare' },
+  { lab: 'cycle', label: 'Cycle' },
+  { lab: 'montecarlo', label: 'MC' },
+  { lab: 'propsim', label: 'Prop Sim' },
+  { lab: 'portfolio', label: 'Portfolio' },
+];
 
 const SLICES: { mode: AttemptMode; label: string }[] = [
   { mode: { kind: 'all' }, label: 'all attempts' },
@@ -50,7 +60,7 @@ const APPETITES: { key: keyof Omit<ReturnType<typeof recommendSetup>, 'mode'>; t
   { key: 'professional', title: '🏛 Professionally', info: 'sr-professional' },
 ];
 
-export function SetupRecommenderPanel({ doc, asset, moveBase, rules, mode, onApply, current }: SetupRecommenderPanelProps) {
+export function SetupRecommenderPanel({ doc, asset, moveBase, rules, mode, onApply, current, onApplyBasketTo }: SetupRecommenderPanelProps) {
   const variants = useMemo<VariantInput[]>(() => {
     const out: VariantInput[] = [];
     const breakoutKey = doc[asset]?.[`${moveBase}MA`] ? `${moveBase}MA` : doc[asset]?.[moveBase] ? moveBase : null;
@@ -166,6 +176,15 @@ export function SetupRecommenderPanel({ doc, asset, moveBase, rules, mode, onApp
                       <span className="text-[var(--color-accent)]">{r.contracts} contracts</span> · MFE {r.minCf}% · Max MAE {r.maxMae > 0 ? `${r.maxMae}%` : 'off'}
                     </div>
                     {renderMetrics(r)}
+                    {onApplyBasketTo && (
+                      <div className="flex items-center gap-1 mt-1.5 flex-wrap">
+                        <span className="text-[8px] uppercase tracking-wide text-[var(--color-text-muted)]">Send→</span>
+                        {SETUP_TARGETS.map((t) => (
+                          <button key={t.lab} onClick={() => onApplyBasketTo([r.variantKey], t.lab, `Setup · ${title} · ${r.entry}`)}
+                            className="text-[8px] px-1 py-0.5 rounded-[4px] border border-[var(--color-border)] text-[var(--color-text-secondary)] hover:text-[var(--color-accent)] hover:border-[var(--color-accent)]/60">{t.label}</button>
+                        ))}
+                      </div>
+                    )}
                   </>
                 )}
               </div>

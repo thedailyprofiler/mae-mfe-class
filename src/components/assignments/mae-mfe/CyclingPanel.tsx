@@ -34,6 +34,8 @@ export interface CyclingPanelProps {
   setNumAccounts: Dispatch<SetStateAction<number>>;
   k: number;
   setK: Dispatch<SetStateAction<number>>;
+  /** Cross-lab Send→ on the recommendation cards. */
+  onApplyBasketTo?: (keys: string[], lab: 'compare' | 'cycle' | 'montecarlo' | 'propsim' | 'portfolio', source?: string) => void;
 }
 
 const SIZES = [
@@ -45,7 +47,7 @@ const SIZES = [
 const selectCls =
   'bg-[var(--color-bg-inset)] border border-[var(--color-border)] rounded-[4px] px-2 py-1 text-[11px] font-[var(--font-mono)] text-[var(--color-text-primary)] focus:outline-none';
 
-export function CyclingPanel({ doc, moves, onClose, acctRules, selected, setSelected, numAccounts, setNumAccounts, k, setK }: CyclingPanelProps) {
+export function CyclingPanel({ doc, moves, onClose, acctRules, selected, setSelected, numAccounts, setNumAccounts, k, setK, onApplyBasketTo }: CyclingPanelProps) {
   const [studyOrdinal, setStudyOrdinal] = useState(1);
   const [attemptMode, setAttemptMode] = useState<AttemptMode>({ kind: 'all' });
 
@@ -132,7 +134,7 @@ export function CyclingPanel({ doc, moves, onClose, acctRules, selected, setSele
       </header>
 
       {/* Cycling-setup recommendations → Apply fills sources + accounts + size */}
-      <LabRecommendCards variant="cycle" recs={recs} busy={busy} hasRun={recs !== null} onRun={runRecs} onApply={applyRec} label={labelOf} />
+      <LabRecommendCards variant="cycle" recs={recs} busy={busy} hasRun={recs !== null} onRun={runRecs} onApply={applyRec} label={labelOf} onApplyBasketTo={onApplyBasketTo} />
 
       {/* Controls */}
       <div className="flex flex-wrap items-end gap-5 px-5 py-3 border-b border-[var(--color-border)] bg-[var(--color-bg-inset)]/40">

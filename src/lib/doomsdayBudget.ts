@@ -82,6 +82,44 @@ export function computeDoomsday(ms: MoveState, asset: AssetTicker, contracts: nu
     riskPerTrade = percentile(sorted, maxMae > 0 ? 0.5 : 0.9);
   }
 
+  return finishDoomsday(rets, lossDollars, riskPerTrade, maxDrawdown, rows.length, hist, mcStreak);
+}
+
+/**
+ * Doomsday Budget for a COMBINED basket (or any precomputed per-period $ series) —
+ * e.g. a basket sent into the Prop Sim, where there is no single MoveState. The
+ * "trade" unit is one combined trading day; risk/period is a bad (P90) down-day
+ * since a mixed basket has no single hard stop.
+ */
+export function computeDoomsdayFromDollars(dollars: number[], maxDrawdown: number, opts: DoomsdayOpts): DoomsdayResult | null {
+  if (dollars.length < 5) return null;
+
+  const lossDollars: number[] = [];
+  let run = 0, hist = 0;
+  for (const d of dollars) {
+    if (d < 0) { lossDollars.push(Math.abs(d)); run += 1; if (run > hist) hist = run; }
+    else run = 0;
+  }
+
+  const mc = runMonteCarlo(dollars, { mode: 'bootstrap', sims: opts.sims, rng: mulberry32(1) });
+  const mcStreak = mc.lossStreakP95;
+
+  let riskPerTrade = 0;
+  if (lossDollars.length) {
+    const sorted = lossDollars.slice().sort((a, b) => a - b);
+    riskPerTrade = percentile(sorted, 0.9); // no single stop → conservative bad day
+  }
+
+  return finishDoomsday(dollars, lossDollars, riskPerTrade, maxDrawdown, dollars.length, hist, mcStreak);
+}
+
+/** Shared tail: turn (streak, risk/trade, account cap) into the survival + scaling budget. */
+function finishDoomsday(
+  rets: number[], lossDollars: number[], riskPerTrade: number,
+  maxDrawdown: number, trades: number, hist: number, mcStreak: number,
+): DoomsdayResult {
+  void rets; void lossDollars;
+  const doomsdayStreak = Math.max(hist, mcStreak, 1);
   const doomsdayDrawdown = doomsdayStreak * riskPerTrade;
   const cap = maxDrawdown > 0 ? maxDrawdown : 0;
   const survivesOnOne = cap > 0 ? doomsdayDrawdown <= cap : false;
@@ -101,7 +139,7 @@ export function computeDoomsday(ms: MoveState, asset: AssetTicker, contracts: nu
     : [];
 
   return {
-    trades: rows.length,
+    trades,
     histLossStreak: hist, mcLossStreak: mcStreak, doomsdayStreak,
     riskPerTrade, doomsdayDrawdown, perAccountCap: cap,
     survivesOnOne, accountsToSurvive, combinedBudget, doomsdayPerAccount, bankPerProp, ladder,

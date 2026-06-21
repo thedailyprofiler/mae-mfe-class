@@ -7,7 +7,7 @@
  *   2. Builder — pick moves + weights → combined equity curve, blended stats,
  *      diversification benefit, and per-move contribution.
  */
-import { Fragment, useMemo, useState } from 'react';
+import { Fragment, useEffect, useMemo, useState } from 'react';
 import type { MaeMfeDocument } from './maeMfeDocument';
 import { buildSeries, computePortfolio } from '../../../lib/portfolio';
 import { mulberry32, type PropRules } from '../../../lib/propSim';
@@ -24,7 +24,16 @@ export interface PortfolioPanelProps {
   acctRules: PropRules;
   acctContracts: number;
   acctMode: 'prop' | 'live';
+  /** A basket of move keys to preload into the builder (from an Apply→Portfolio elsewhere). */
+  preset?: string[] | null;
+  /** Send a recommended basket to another lab (Compare/Cycle/Monte Carlo/Prop Sim). */
+  onApplyBasketTo?: (keys: string[], lab: 'compare' | 'cycle' | 'montecarlo' | 'portfolio' | 'propsim', source?: string) => void;
 }
+
+const GRAND_TARGETS: { lab: 'compare' | 'cycle' | 'montecarlo' | 'propsim'; label: string }[] = [
+  { lab: 'compare', label: 'Compare' }, { lab: 'cycle', label: 'Cycle' },
+  { lab: 'montecarlo', label: 'Monte Carlo' }, { lab: 'propsim', label: 'Prop Sim' },
+];
 
 const cardCls = 'flex-1 min-w-[120px] bg-[var(--color-bg-inset)] border border-[var(--color-border)] rounded-[6px] px-3 py-2';
 const lblCls = 'text-[9px] uppercase tracking-wide text-[var(--color-text-secondary)] flex items-center gap-1';
@@ -43,7 +52,7 @@ function NumField({ label, info, value, onChange, step = 1, min = 0 }: { label: 
 }
 
 /** One appetite's full plan: basket + combined prop-sim survival + Apply. */
-function GrandCard({ rec, mode, onApply, selected, onSelect }: { rec: GrandRec | null; title: string; info: string; mode: 'prop' | 'live'; onApply: () => void; selected: boolean; onSelect: () => void }) {
+function GrandCard({ rec, mode, onApply, selected, onSelect, onApplyBasketTo }: { rec: GrandRec | null; title: string; info: string; mode: 'prop' | 'live'; onApply: () => void; selected: boolean; onSelect: () => void; onApplyBasketTo?: PortfolioPanelProps['onApplyBasketTo'] }) {
   if (!rec) return null;
   const seg = (w: number, bg: string) => (w > 0 ? <div key={bg} style={{ width: `${w * 100}%`, background: bg }} className="overflow-hidden text-center text-[var(--color-text-primary)]">{w >= 0.16 ? `${(w * 100).toFixed(0)}%` : ''}</div> : null);
   return (
@@ -71,11 +80,20 @@ function GrandCard({ rec, mode, onApply, selected, onSelect }: { rec: GrandRec |
           <div>{usd(rec.maxDD)} max DD · {(rec.bust * 100).toFixed(0)}% risk of ruin · div {(rec.diversification * 100).toFixed(0)}%</div>
         </div>
       )}
+      {onApplyBasketTo && (
+        <div className="flex items-center gap-1 mt-1.5 flex-wrap">
+          <span className="text-[8px] uppercase tracking-wide text-[var(--color-text-muted)]">Send→</span>
+          {GRAND_TARGETS.map((t) => (
+            <span key={t.lab} onClick={(e) => { e.stopPropagation(); onApplyBasketTo(rec.alloc.map((a) => a.key), t.lab, `Grand · ${rec.title}`); }}
+              className="text-[8px] px-1 py-0.5 rounded-[4px] border border-[var(--color-border)] text-[var(--color-text-secondary)] hover:text-[var(--color-accent)] hover:border-[var(--color-accent)]/60 cursor-pointer">{t.label}</span>
+          ))}
+        </div>
+      )}
     </button>
   );
 }
 
-export function PortfolioPanel({ doc, moves, onClose, acctRules, acctContracts, acctMode }: PortfolioPanelProps) {
+export function PortfolioPanel({ doc, moves, onClose, acctRules, acctContracts, acctMode, preset, onApplyBasketTo }: PortfolioPanelProps) {
   const moveLabel = useMemo(() => {
     const m: Record<string, string> = {};
     for (const mv of moves) m[mv.id] = mv.label;
@@ -109,6 +127,14 @@ export function PortfolioPanel({ doc, moves, onClose, acctRules, acctContracts, 
     for (const a of alloc) { inc[a.key] = true; w[a.key] = a.weight * 100; }
     setIncluded(inc); setWeights(w);
   };
+  // A basket applied from another lab (Apply→Portfolio) preloads the builder equal-weight.
+  useEffect(() => {
+    if (!preset || preset.length === 0) return;
+    const inc: Record<string, boolean> = {}; const w: Record<string, number> = {};
+    for (const s of series) { inc[s.key] = false; w[s.key] = 0; }
+    for (const k of preset) { inc[k] = true; w[k] = 100; }
+    setIncluded(inc); setWeights(w);
+  }, [preset, series]);
 
   if (series.length === 0) {
     return (
@@ -138,7 +164,7 @@ export function PortfolioPanel({ doc, moves, onClose, acctRules, acctContracts, 
       <div className="text-[9px] text-[var(--color-text-muted)] mb-2">{acctMode === 'prop' ? 'Prop eval' : 'Live capital'} · each move at its own size · ${acctRules.accountSize.toLocaleString()} acct · target ${acctRules.profitTarget.toLocaleString()} · DD ${acctRules.maxDrawdown.toLocaleString()} ({acctRules.ddMode}) — change these in the Account Profile above the asset switcher.</div>
       <div className="flex flex-wrap gap-2 mb-3">
         {GRAND_APPETITES.map(({ key, title, info }) => (
-          <GrandCard key={key} rec={grand[key]} title={title} info={info} mode={acctMode} selected={grandSel === key} onSelect={() => setGrandSel(key)} onApply={() => grand[key] && applyAlloc(grand[key]!.alloc)} />
+          <GrandCard key={key} rec={grand[key]} title={title} info={info} mode={acctMode} selected={grandSel === key} onSelect={() => setGrandSel(key)} onApply={() => grand[key] && applyAlloc(grand[key]!.alloc)} onApplyBasketTo={onApplyBasketTo} />
         ))}
       </div>
 

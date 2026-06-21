@@ -112,11 +112,19 @@ Four-plus tools, all using your move's settings:
     worst losing streak (history + a Monte-Carlo 95th-percentile), multiplies by your
     risk per trade to get the deepest hole you must survive, then tells you the capital,
     the account rotation, and the position size that survives it. *Survive doomsday and
-    the other 99% is gravy.*
+    the other 99% is gravy.* It runs for a single move, or for a whole basket you send in
+    — for a basket it counts your worst run of losing **days** instead of trades.
   - **🏴‍☠️ Best moves to flip** + **💸 Best ROI to flip** — recommendation cards that scan
     every move and tell you which one (and what size) passes fastest, most reliably, for
     the best return per dollar spent on accounts, and cheapest to profit.
   - **🧩 Best basket to flip** — which *several* moves to run together to flip faster.
+
+One more thing that ties it all together: every recommendation card, everywhere, has a
+**Send→** row. See a basket you like in Compare, a flip on the Prop Sim, a Grand pick in
+the Portfolio? Send it straight into any other lab — Compare, Cycle, Monte Carlo, Prop Sim,
+or Portfolio — and it loads there ready to go. When you arrive, a **"✓ Loaded here from:"**
+banner reminds you exactly what you sent and which card it came from, so you never lose the
+thread.
 
 ---
 

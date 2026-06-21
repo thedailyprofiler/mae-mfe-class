@@ -34,6 +34,8 @@ export interface CombineComparePanelProps {
   /** Set A is lifted to the parent so Monte Carlo / other labs can resample it. */
   setA: Set<string>;
   setSetA: Dispatch<SetStateAction<Set<string>>>;
+  /** Cross-lab Send→ on the recommendation cards. */
+  onApplyBasketTo?: (keys: string[], lab: 'compare' | 'cycle' | 'montecarlo' | 'propsim' | 'portfolio', source?: string) => void;
 }
 
 const selectCls =
@@ -110,7 +112,7 @@ function fmtMetric(v: number | null, m: { money?: boolean; ratio?: boolean }): s
   return fmtNumber(v);
 }
 
-export function CombineComparePanel({ doc, moves, onClose, acctRules, setA, setSetA }: CombineComparePanelProps) {
+export function CombineComparePanel({ doc, moves, onClose, acctRules, setA, setSetA, onApplyBasketTo }: CombineComparePanelProps) {
   const [setB, setSetB] = useState<Set<string>>(new Set());
   // Per-set study (ordinal) + attempt subset.
   const [studyA, setStudyA] = useState(1);
@@ -195,7 +197,7 @@ export function CombineComparePanel({ doc, moves, onClose, acctRules, setA, setS
       </header>
 
       {/* Move-basket recommendations → Apply into Set A or Set B */}
-      <LabRecommendCards variant="combine" recs={recs} busy={busy} hasRun={recs !== null} onRun={runRecs} onApply={applyRec} label={labelOf} targets={[{ id: 'A', label: '→ A' }, { id: 'B', label: '→ B' }]} />
+      <LabRecommendCards variant="combine" recs={recs} busy={busy} hasRun={recs !== null} onRun={runRecs} onApply={applyRec} label={labelOf} targets={[{ id: 'A', label: '→ A' }, { id: 'B', label: '→ B' }]} onApplyBasketTo={onApplyBasketTo} />
 
       {/* Source pickers */}
       <div className="grid grid-cols-1 lg:grid-cols-2 divide-y lg:divide-y-0 lg:divide-x divide-[var(--color-border)]">

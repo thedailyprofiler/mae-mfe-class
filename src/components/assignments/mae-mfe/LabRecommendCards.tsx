@@ -12,8 +12,16 @@ type Recs = Record<Appetite, CombineRec | CycleRec | null>;
 
 const cardCls = 'flex-1 min-w-[220px] bg-[var(--color-bg-inset)] border border-[var(--color-border)] rounded-[6px] px-3 py-2.5';
 
+const LAB_TARGETS: { lab: 'compare' | 'cycle' | 'montecarlo' | 'propsim' | 'portfolio'; label: string }[] = [
+  { lab: 'compare', label: 'Compare' },
+  { lab: 'cycle', label: 'Cycle' },
+  { lab: 'montecarlo', label: 'MC' },
+  { lab: 'propsim', label: 'Prop Sim' },
+  { lab: 'portfolio', label: 'Portfolio' },
+];
+
 export function LabRecommendCards({
-  variant, recs, busy, hasRun, onRun, onApply, label, targets,
+  variant, recs, busy, hasRun, onRun, onApply, label, targets, onApplyBasketTo,
 }: {
   variant: 'combine' | 'cycle';
   recs: Recs | null;
@@ -24,6 +32,8 @@ export function LabRecommendCards({
   label: (key: string) => string;
   /** When set, render one Apply button per target (e.g. Set A / Set B). */
   targets?: { id: string; label: string }[];
+  /** Cross-lab Send→ : load this basket into any other lab. */
+  onApplyBasketTo?: (keys: string[], lab: 'compare' | 'cycle' | 'montecarlo' | 'propsim' | 'portfolio', source?: string) => void;
 }) {
   // Open by default (cards auto-compute); the user can collapse the strip.
   const [open, setOpen] = useState(true);
@@ -76,6 +86,15 @@ export function LabRecommendCards({
                     ) : (
                       <div className="text-[10px] font-[var(--font-mono)] mt-1.5 text-[var(--color-text-secondary)]">
                         total {fmtDollars(r.stats.totalPnl)} · maxDD {fmtDollars(r.stats.maxDrawdown)} · Sharpe {r.sharpe.toFixed(2)}
+                      </div>
+                    )}
+                    {onApplyBasketTo && (
+                      <div className="flex items-center gap-1 mt-1.5 flex-wrap">
+                        <span className="text-[8px] uppercase tracking-wide text-[var(--color-text-muted)]">Send→</span>
+                        {LAB_TARGETS.map((t) => (
+                          <button key={t.lab} onClick={() => onApplyBasketTo([...r.keys], t.lab, `${variant === 'combine' ? 'Compare' : 'Cycle'} · ${title}`)}
+                            className="text-[8px] px-1 py-0.5 rounded-[4px] border border-[var(--color-border)] text-[var(--color-text-secondary)] hover:text-[var(--color-accent)] hover:border-[var(--color-accent)]/60">{t.label}</button>
+                        ))}
                       </div>
                     )}
                   </>

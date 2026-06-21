@@ -26,11 +26,12 @@ export const STEP_GUIDES: Record<number, { what: string; how: string[] }> = {
   3: {
     what: 'Stress-test the plan so it survives the worst case before you risk money.',
     how: [
-      'Prop Sim: will this pass a prop eval before the drawdown busts it? Pass / bust / days-to-pass / expected $.',
-      'Doomsday Budget (in Prop Sim): your worst losing streak × risk per trade = the hole you must survive; it gives the capital, account rotation, and the size that survives it.',
+      'Prop Sim: will this pass a prop eval before the drawdown busts it? Pass / bust / days-to-pass / expected $. Pick your firm (Apex, Topstep, TPT, Lucid, Alpha Futures, Tradeify) and it loads that firm\'s rules + eval cost.',
+      'Doomsday Budget (in Prop Sim): your worst losing streak × risk = the hole you must survive; it gives the capital, account rotation, and the size that survives it. Works for a single move AND for a whole basket you sent in (then it counts worst DOWN-DAYS in a row).',
       'Monte Carlo: replays your trades thousands of times to show the realistic range — "did I just get lucky?"',
       'Compare / Cycle: pit setups against each other and rotate trades across prop accounts so no one account eats a whole streak.',
       'Best-moves-to-flip & ROI cards: which move + size passes fastest / cheapest / best return per $ spent.',
+      'Send→ on every card: take any recommendation and load it straight into Compare, Cycle, Monte Carlo, Prop Sim, or Portfolio. The page you land on shows a "✓ Loaded here from: …" banner so you always know what you sent and where it came from.',
     ],
   },
   4: {
@@ -38,7 +39,7 @@ export const STEP_GUIDES: Record<number, { what: string; how: string[] }> = {
     how: [
       'Correlation: green pairs diversify (good), red pairs move together (stacking risk). It flags the most redundant pair, the best diversifier to add, and the pair that crashes together. Dim cells = not enough data to trust.',
       'Grand Recommendation: per risk appetite, a basket of complementary moves run through the simulator together — with a $ equity curve, your bust line, and a Day-14 marker.',
-      'Click a Grand card to chart it; Apply loads it into the builder.',
+      'Click a Grand card to chart it; Apply loads it into the builder. Send→ ships the same basket into Compare / Cycle / Monte Carlo / Prop Sim if you want to stress it there.',
     ],
   },
   5: {

@@ -73,6 +73,17 @@ function StepBar({ n, title, badge, open, onToggle, children }: {
   );
 }
 
+// "Loaded here from …" banner shown in a lab after an Apply→ / Send→ from elsewhere.
+function AppliedBanner({ text, onClear }: { text: string; onClear: () => void }) {
+  return (
+    <div className="flex items-center gap-2 mb-2 px-3 py-1.5 rounded-[6px] border border-[var(--color-accent)]/50 bg-[var(--color-accent)]/10 text-[10px]">
+      <span className="text-[var(--color-accent)] font-semibold">✓ Loaded here from:</span>
+      <span className="text-[var(--color-text-primary)]">{text}</span>
+      <button type="button" onClick={onClear} className="ml-auto text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)]" title="Dismiss">✕</button>
+    </div>
+  );
+}
+
 // Collapsible plain-language guide shown at the top of each step (📖 Guide).
 function SectionGuide({ step }: { step: number }) {
   const g = STEP_GUIDES[step];
@@ -186,6 +197,21 @@ export function MaeMfeAnalysisView({
   const [cycleSel, setCycleSel] = useState<Set<string>>(new Set());
   const [cycleN, setCycleN] = useState(5);
   const [cycleK, setCycleK] = useState(1);
+  const [portfolioPreset, setPortfolioPreset] = useState<string[] | null>(null);
+  // "What did I just load, and from where" — shown as a banner in the destination lab.
+  const [appliedNote, setAppliedNote] = useState<{ lab: string; text: string } | null>(null);
+  // Apply a recommended basket/move into a chosen lab and jump there. Must OPEN the
+  // step that contains the lab (Compare/Cycle/MonteCarlo/PropSim live in Step 3;
+  // Correlate/Portfolio in Step 4) — otherwise the panel doesn't render.
+  const applyBasketTo = (keys: string[], target: 'compare' | 'cycle' | 'montecarlo' | 'portfolio' | 'propsim', source?: string) => {
+    if (target === 'cycle') setCycleSel(new Set(keys));
+    else if (target === 'portfolio') setPortfolioPreset(keys);
+    else setCombineSetA(new Set(keys)); // compare + monte carlo + prop sim read Set A / the combined source
+    const moves = `${keys.length} move${keys.length === 1 ? '' : 's'}`;
+    setAppliedNote({ lab: target, text: source ? `${source} · ${moves}` : moves });
+    setOpenStep(target === 'portfolio' ? 4 : 3);
+    setLab(target);
+  };
   // Guided 5-step accordion: which step is expanded (default Step 2 — Build your plan).
   const [openStep, setOpenStep] = useState<number | null>(2);
   const openStepToggle = (n: number) => { setOpenStep((s) => (s === n ? null : n)); setLab(null); };
@@ -380,6 +406,7 @@ export function MaeMfeAnalysisView({
       <SetupRecommenderPanel
         doc={doc} asset={activeAsset} moveBase={activeGroup?.base ?? safeMove} rules={profileRules} mode={acctMode} onApply={applySetup}
         current={{ variantKey: safeMove, minCf: moveState.minCashflowPct, maxMae: moveState.maxMaePct ?? 0, contracts: moveState.defaultContracts }}
+        onApplyBasketTo={applyBasketTo}
       />
     </SubStep>
   );
@@ -631,10 +658,11 @@ export function MaeMfeAnalysisView({
               className={['px-3 py-1.5 rounded-[6px] border font-[var(--font-mono)] text-[11px] uppercase tracking-[0.1em] transition-colors', lab === mode ? 'bg-[var(--color-accent)]/15 border-[var(--color-accent)] text-[var(--color-accent)] font-semibold' : 'border-[var(--color-border)] text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)]'].join(' ')}>{label}</button>
           ))}
         </div>
-        {lab === 'compare' ? <CombineComparePanel doc={doc} moves={allMoveOpts} onClose={() => setLab(null)} acctRules={profileRules} setA={combineSetA} setSetA={setCombineSetA} />
-          : lab === 'cycle' ? <CyclingPanel doc={doc} moves={allMoveOpts} onClose={() => setLab(null)} acctRules={profileRules} selected={cycleSel} setSelected={setCycleSel} numAccounts={cycleN} setNumAccounts={setCycleN} k={cycleK} setK={setCycleK} />
+        {lab && appliedNote && appliedNote.lab === lab && lab !== 'correlate' && lab !== 'portfolio' && <AppliedBanner text={appliedNote.text} onClear={() => setAppliedNote(null)} />}
+        {lab === 'compare' ? <CombineComparePanel doc={doc} moves={allMoveOpts} onClose={() => setLab(null)} acctRules={profileRules} setA={combineSetA} setSetA={setCombineSetA} onApplyBasketTo={applyBasketTo} />
+          : lab === 'cycle' ? <CyclingPanel doc={doc} moves={allMoveOpts} onClose={() => setLab(null)} acctRules={profileRules} selected={cycleSel} setSelected={setCycleSel} numAccounts={cycleN} setNumAccounts={setCycleN} k={cycleK} setK={setCycleK} onApplyBasketTo={applyBasketTo} />
           : lab === 'montecarlo' ? <MonteCarloPanel doc={doc} moves={allMoveOpts} onClose={() => setLab(null)} combineKeys={[...combineSetA]} cycleKeys={[...cycleSel]} />
-          : lab === 'propsim' ? <PropSimPanel doc={doc} moves={allMoveOpts} onClose={() => setLab(null)} onApplyBasket={(keys) => { setCombineSetA(new Set(keys)); setLab('compare'); }} />
+          : lab === 'propsim' ? <PropSimPanel doc={doc} moves={allMoveOpts} onClose={() => setLab(null)} onApplyBasketTo={applyBasketTo} combineKeys={[...combineSetA]} />
           : <p className="text-[11px] text-[var(--color-text-secondary)] mt-2">Pick a tool above — your move, Min Cashflow / Max MAE, contracts and attempts from Step 2 carry over automatically.</p>}
       </StepBar>
 
@@ -647,8 +675,9 @@ export function MaeMfeAnalysisView({
               className={['px-3 py-1.5 rounded-[6px] border font-[var(--font-mono)] text-[11px] uppercase tracking-[0.1em] transition-colors', lab === mode ? 'bg-[var(--color-accent)]/15 border-[var(--color-accent)] text-[var(--color-accent)] font-semibold' : 'border-[var(--color-border)] text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)]'].join(' ')}>{label}</button>
           ))}
         </div>
+        {lab && appliedNote && appliedNote.lab === lab && (lab === 'portfolio' || lab === 'correlate') && <AppliedBanner text={appliedNote.text} onClear={() => setAppliedNote(null)} />}
         {lab === 'correlate' ? <CorrelationPanel doc={doc} moves={allMoveOpts} onClose={() => setLab(null)} />
-          : lab === 'portfolio' ? <PortfolioPanel doc={doc} moves={allMoveOpts} onClose={() => setLab(null)} acctRules={profileRules} acctContracts={sizeContracts} acctMode={acctMode} />
+          : lab === 'portfolio' ? <PortfolioPanel doc={doc} moves={allMoveOpts} onClose={() => setLab(null)} acctRules={profileRules} acctContracts={sizeContracts} acctMode={acctMode} preset={portfolioPreset} onApplyBasketTo={applyBasketTo} />
           : <p className="text-[11px] text-[var(--color-text-secondary)] mt-2">Pick a tool above to see how your moves correlate and combine into a portfolio.</p>}
       </StepBar>
 

@@ -8,7 +8,9 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { MaeMfeDocument } from './maeMfeDocument';
 import { buildDollarSeries, runPropSim, mulberry32, type McMode, type PropRules } from '../../../lib/propSim';
-import { computeDoomsday } from '../../../lib/doomsdayBudget';
+import { combinedStats } from '../../../lib/maeMfeCombine';
+import { buildLabSources } from './labSources';
+import { computeDoomsday, computeDoomsdayFromDollars } from '../../../lib/doomsdayBudget';
 import { recommendFlip, FLIP_STYLES, type FlipRec, type FlipStyle } from '../../../lib/flipRecommend';
 import { FIRM_PRESETS, FIRM_SIZES, scalePreset, passPayout } from '../../../lib/propFirms';
 import { recommendFlipRoi, ROI_STYLES, type RoiRec, type RoiStyle, recommendFlipBasket, BASKET_STYLES, type FlipBasket, type BasketStyle } from '../../../lib/flipRoiRecommend';
@@ -21,9 +23,20 @@ export interface PropSimPanelProps {
   doc: MaeMfeDocument;
   moves: MoveOpt[];
   onClose: () => void;
-  /** Load a recommended basket (move keys) into the Compare lab's Set A. */
-  onApplyBasket?: (keys: string[]) => void;
+  /** Load a recommended basket (move keys) into a chosen lab and jump there. */
+  onApplyBasketTo?: (keys: string[], lab: ApplyLab, source?: string) => void;
+  /** Keys of the Combine basket (Set A) — offered as a "Combined basket" source here too. */
+  combineKeys?: string[];
 }
+
+type ApplyLab = 'compare' | 'cycle' | 'montecarlo' | 'portfolio' | 'propsim';
+const BASKET_TARGETS: { lab: ApplyLab; label: string }[] = [
+  { lab: 'compare', label: 'Compare' },
+  { lab: 'cycle', label: 'Cycle' },
+  { lab: 'montecarlo', label: 'Monte Carlo' },
+  { lab: 'propsim', label: 'Prop Sim' },
+  { lab: 'portfolio', label: 'Portfolio' },
+];
 
 const cardCls = 'flex-1 min-w-[120px] bg-[var(--color-bg-inset)] border border-[var(--color-border)] rounded-[6px] px-3 py-2';
 const lblCls = 'text-[9px] uppercase tracking-wide text-[var(--color-text-secondary)] flex items-center gap-1';
@@ -41,7 +54,7 @@ function NumField({ label, info, value, onChange, step = 1, min = 0 }: { label: 
   );
 }
 
-export function PropSimPanel({ doc, moves, onClose, onApplyBasket }: PropSimPanelProps) {
+export function PropSimPanel({ doc, moves, onClose, onApplyBasketTo, combineKeys }: PropSimPanelProps) {
   const moveLabel = useMemo(() => {
     const m: Record<string, string> = {};
     for (const mv of moves) m[mv.id] = mv.label;
@@ -83,10 +96,22 @@ export function PropSimPanel({ doc, moves, onClose, onApplyBasket }: PropSimPane
     maxPayouts: 0, maxDays: rules.maxDays,
   }), [rules, evalCost, resetFee, consistencyPct, payoutMax, splitPct]);
 
-  const series = useMemo(() => buildDollarSeries(doc, moveLabel, contracts), [doc, moveLabel, contracts]);
+  // The Combine basket (Set A) is offered as a "▣ Combined basket" source at the top —
+  // run the whole basket through the prop-eval, not just one move.
+  const combined = useMemo(() => {
+    if (!combineKeys || combineKeys.length === 0) return null;
+    const { days } = combinedStats(buildLabSources(doc, new Set(combineKeys), 1, { kind: 'all' }));
+    if (!days.length) return null;
+    return { key: '__combine', label: `▣ Combined basket (${combineKeys.length} moves)`, asset: 'MNQ' as AssetTicker, dollars: days.map((d) => d.pnl), dates: days.map((d) => d.tradeDate) };
+  }, [doc, combineKeys]);
+  const series = useMemo(() => {
+    const base = buildDollarSeries(doc, moveLabel, contracts);
+    return combined ? [combined, ...base] : base;
+  }, [doc, moveLabel, contracts, combined]);
   const active = series[Math.min(sel, series.length - 1)];
+  const isBasket = active?.key === '__combine';
   const activeCfg = useMemo(() => {
-    if (!active) return null;
+    if (!active || active.key === '__combine') return null;
     const [asset, move] = active.key.split('::') as [AssetTicker, string];
     const ms = doc[asset]?.[move];
     return ms ? { minCf: ms.minCashflowPct, maxMae: ms.maxMaePct ?? 0 } : null;
@@ -122,6 +147,19 @@ export function PropSimPanel({ doc, moves, onClose, onApplyBasket }: PropSimPane
     if (idx >= 0) setSel(idx);
     setContracts(rec.contracts);
   };
+  // "Send this one move →" a chosen lab (single-move recs). Prop Sim is "use here" (Apply).
+  const SINGLE_TARGETS: { lab: ApplyLab; label: string }[] = [
+    { lab: 'compare', label: 'Compare' }, { lab: 'cycle', label: 'Cycle' },
+    { lab: 'montecarlo', label: 'MC' }, { lab: 'portfolio', label: 'Portfolio' },
+  ];
+  const targetRow = (key: string, source: string) => onApplyBasketTo ? (
+    <div className="flex items-center gap-1 mt-1 flex-wrap">
+      <span className="text-[8px] uppercase tracking-wide text-[var(--color-text-muted)]">Send→</span>
+      {SINGLE_TARGETS.map((t) => (
+        <button key={t.lab} onClick={() => onApplyBasketTo([key], t.lab, source)} className="text-[8px] px-1 py-0.5 rounded-[4px] border border-[var(--color-border)] text-[var(--color-text-secondary)] hover:text-[var(--color-accent)] hover:border-[var(--color-accent)]/60">{t.label}</button>
+      ))}
+    </div>
+  ) : null;
   // Multi-move flip basket (button-triggered — heavier all-moves lifecycle scan).
   const [basketRecs, setBasketRecs] = useState<Record<BasketStyle, FlipBasket | null> | null>(null);
   const [basketBusy, setBasketBusy] = useState(false);
@@ -143,15 +181,17 @@ export function PropSimPanel({ doc, moves, onClose, onApplyBasket }: PropSimPane
   // losing streak and the capital + rotation + scaling that survives it.
   const doom = useMemo(() => {
     if (!active) return null;
+    const dsims = Math.min(Math.max(sims, 50), 5000);
+    if (active.key === '__combine') return computeDoomsdayFromDollars(active.dollars, rules.maxDrawdown, { sims: dsims }); // basket → combined-day streak
     const [asset, move] = active.key.split('::') as [AssetTicker, string];
     const ms = doc[asset]?.[move];
-    return ms ? computeDoomsday(ms, asset, contracts, rules.maxDrawdown, { sims: Math.min(Math.max(sims, 50), 5000) }) : null;
+    return ms ? computeDoomsday(ms, asset, contracts, rules.maxDrawdown, { sims: dsims }) : null;
   }, [active, doc, contracts, rules.maxDrawdown, sims]);
 
   // Synthesis: the biggest size whose doomsday streak still fits ONE account's cap
   // (size up as far as you can while still surviving the worst streak), + the $ you'd
   // spend on props to cover the doomsday (accounts to survive × eval cost).
-  const recSize = doom && doom.doomsdayDrawdown > 0 && doom.perAccountCap > 0
+  const recSize = doom && !isBasket && doom.doomsdayDrawdown > 0 && doom.perAccountCap > 0
     ? Math.max(1, Math.floor((contracts * doom.perAccountCap) / doom.doomsdayDrawdown)) : null;
   const propSpend = doom && doom.accountsToSurvive > 0 ? doom.accountsToSurvive * evalCost : null;
 
@@ -206,6 +246,7 @@ export function PropSimPanel({ doc, moves, onClose, onApplyBasket }: PropSimPane
                       <div className="text-[11px] font-semibold text-[var(--color-text-primary)] mt-1">{r.label}</div>
                       <div className="text-[9px] font-[var(--font-mono)] text-[var(--color-text-secondary)] mt-0.5"><span className="text-[var(--color-accent)]">{r.contracts}ct</span> · MFE {r.minCf}% · Max MAE {r.maxMae > 0 ? `${r.maxMae}%` : 'off'}</div>
                       <div className="text-[9px] font-[var(--font-mono)] text-[var(--color-text-secondary)] mt-0.5">pass {(r.pass * 100).toFixed(0)}% · {r.medianDays != null ? `~${Math.round(r.medianDays)}d` : '—'} · bust {(r.bust * 100).toFixed(0)}%{key === 'ev' ? ` · EV ${usd(r.evPerAccount)}/acct` : ''}{key === 'consistency' ? ` · ${(r.consistency * 100).toFixed(0)}% top day` : ''}</div>
+                      {targetRow(r.key, `Flip · ${title} · ${r.label}`)}
                     </>
                   )}
                 </div>
@@ -244,6 +285,7 @@ export function PropSimPanel({ doc, moves, onClose, onApplyBasket }: PropSimPane
                         {key === 'payout' ? <><b className="text-[var(--color-text-primary)]">{r.daysToPayout != null ? `~${Math.round(r.daysToPayout)}d` : '—'}</b> to 1st payout · {r.payouts.toFixed(1)} payouts · net {usd(r.net)}</> : null}
                         {key === 'cheapest' ? <><b className="text-[var(--color-text-primary)]">{usd(r.spend)} spend</b> · net {usd(r.net)} · {(r.profitableShare * 100).toFixed(0)}% profitable</> : null}
                       </div>
+                      {targetRow(r.key, `ROI · ${title} · ${r.label}`)}
                     </>
                   )}
                 </div>
@@ -268,10 +310,7 @@ export function PropSimPanel({ doc, moves, onClose, onApplyBasket }: PropSimPane
               const b = basketRecs[key];
               return (
                 <div key={key} className="flex-1 min-w-[230px] bg-[var(--color-bg-inset)] border border-[var(--color-border)] rounded-[6px] px-3 py-2">
-                  <div className="flex items-center justify-between">
-                    <div className={lblCls}>{title}<InfoTip id={info} /></div>
-                    {b && onApplyBasket && <button onClick={() => onApplyBasket(b.keys)} className="text-[9px] px-1.5 py-0.5 rounded-[4px] border border-[var(--color-accent)] text-[var(--color-accent)] hover:bg-[var(--color-accent)]/10">Apply→Compare</button>}
-                  </div>
+                  <div className={lblCls}>{title}<InfoTip id={info} /></div>
                   {!b ? <div className="text-[9px] text-[var(--color-text-secondary)] mt-1">no net-positive basket</div> : (
                     <>
                       <div className="text-[9px] text-[var(--color-text-muted)] mt-1 leading-snug">{note}</div>
@@ -281,6 +320,14 @@ export function PropSimPanel({ doc, moves, onClose, onApplyBasket }: PropSimPane
                         {key === 'payout' ? <><b className="text-[var(--color-text-primary)]">{b.daysToPayout != null ? `~${Math.round(b.daysToPayout)}d` : '—'}</b> to 1st payout · {b.payouts.toFixed(1)} payouts</> : null}
                         {key === 'cheapest' ? <><b className="text-[var(--color-text-primary)]">{usd(b.spend)} spend</b> · net {usd(b.net)} · {(b.profitableShare * 100).toFixed(0)}% profitable</> : null}
                       </div>
+                      {onApplyBasketTo && (
+                        <div className="flex items-center gap-1 mt-1.5 flex-wrap">
+                          <span className="text-[8px] uppercase tracking-wide text-[var(--color-text-muted)]">Apply→</span>
+                          {BASKET_TARGETS.map((t) => (
+                            <button key={t.lab} onClick={() => onApplyBasketTo(b.keys, t.lab, `Flip basket · ${title}`)} className="text-[8px] px-1.5 py-0.5 rounded-[4px] border border-[var(--color-accent)]/70 text-[var(--color-accent)] hover:bg-[var(--color-accent)]/10">{t.label}</button>
+                          ))}
+                        </div>
+                      )}
                     </>
                   )}
                 </div>
@@ -391,7 +438,7 @@ export function PropSimPanel({ doc, moves, onClose, onApplyBasket }: PropSimPane
             <InfoTip id="dd-feature" />
           </div>
           <div className="text-[10px] text-[var(--color-text-primary)] mb-2 leading-relaxed">
-            This move's <b>worst losing streak</b> is <b style={{ color: '#d06666' }}>{doom.doomsdayStreak} in a row</b> (history {doom.histLossStreak} · Monte-Carlo P95 {doom.mcLossStreak}). At {usd(doom.riskPerTrade)} risk per stopped-out trade, a full streak digs a <b style={{ color: '#d06666' }}>{usd(doom.doomsdayDrawdown)}</b> hole — your doomsday drawdown. {doom.perAccountCap > 0 ? (doom.survivesOnOne ? <>One {usd(doom.perAccountCap)} account <b style={{ color: '#5fae7f' }}>survives it</b> ({usd(doom.perAccountCap - doom.doomsdayDrawdown)} headroom).</> : <>One {usd(doom.perAccountCap)} account <b style={{ color: '#d06666' }}>can't absorb it</b> — rotate <b>{doom.accountsToSurvive} accounts</b> to share the drawdown.</>) : <>Set a Max DD above to size it.</>}
+            This {isBasket ? 'basket' : 'move'}'s <b>worst losing streak</b> is <b style={{ color: '#d06666' }}>{doom.doomsdayStreak} {isBasket ? 'down days' : ''} in a row</b> (history {doom.histLossStreak} · Monte-Carlo P95 {doom.mcLossStreak}). At {usd(doom.riskPerTrade)} risk per {isBasket ? 'bad combined day' : 'stopped-out trade'}, a full streak digs a <b style={{ color: '#d06666' }}>{usd(doom.doomsdayDrawdown)}</b> hole — your doomsday drawdown. {doom.perAccountCap > 0 ? (doom.survivesOnOne ? <>One {usd(doom.perAccountCap)} account <b style={{ color: '#5fae7f' }}>survives it</b> ({usd(doom.perAccountCap - doom.doomsdayDrawdown)} headroom).</> : <>One {usd(doom.perAccountCap)} account <b style={{ color: '#d06666' }}>can't absorb it</b> — rotate <b>{doom.accountsToSurvive} accounts</b> to share the drawdown.</>) : <>Set a Max DD above to size it.</>}
           </div>
           {recSize != null && (
             <div className="flex flex-wrap items-center gap-3 mb-2 p-2 rounded-[6px] border border-[var(--color-accent)]/40 bg-[var(--color-accent)]/[0.05]">
@@ -402,7 +449,7 @@ export function PropSimPanel({ doc, moves, onClose, onApplyBasket }: PropSimPane
           )}
           <div className="flex flex-wrap gap-2 mb-2">
             <div className={cardCls}><div className={lblCls}>Worst Loss Streak<InfoTip id="dd-streak" /></div><div className={valCls} style={{ color: doom.doomsdayStreak >= 8 ? '#d06666' : undefined }}>{doom.doomsdayStreak}<span className="text-[10px] text-[var(--color-text-secondary)]"> in a row</span></div></div>
-            <div className={cardCls}><div className={lblCls}>Risk / Trade<InfoTip id="dd-risk" /></div><div className={valCls} style={{ color: '#d06666' }}>{usd(doom.riskPerTrade)}</div></div>
+            <div className={cardCls}><div className={lblCls}>Risk / {isBasket ? 'Day' : 'Trade'}<InfoTip id="dd-risk" /></div><div className={valCls} style={{ color: '#d06666' }}>{usd(doom.riskPerTrade)}</div></div>
             <div className={cardCls}><div className={lblCls}>Doomsday Drawdown<InfoTip id="dd-drawdown" /></div><div className={valCls} style={{ color: '#d06666' }}>{usd(doom.doomsdayDrawdown)}</div><div className="text-[8px] text-[var(--color-text-muted)] mt-0.5">{doom.doomsdayStreak} × {usd(doom.riskPerTrade)}</div></div>
             <div className={cardCls}><div className={lblCls}>Survive on 1?<InfoTip id="dd-survive" /></div><div className={valCls} style={{ color: doom.perAccountCap <= 0 ? undefined : doom.survivesOnOne ? '#5fae7f' : '#d06666' }}>{doom.perAccountCap <= 0 ? '—' : doom.survivesOnOne ? 'Yes ✓' : 'No ✕'}</div></div>
             <div className={cardCls}><div className={lblCls}>Accounts to Survive<InfoTip id="dd-rotation" /></div><div className={valCls} style={{ color: 'var(--color-accent)' }}>{doom.accountsToSurvive || '—'}</div><div className="text-[8px] text-[var(--color-text-muted)] mt-0.5">combined {usd(doom.combinedBudget)}</div></div>
