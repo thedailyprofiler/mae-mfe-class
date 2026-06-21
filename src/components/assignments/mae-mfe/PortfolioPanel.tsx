@@ -14,6 +14,7 @@ import { mulberry32, type PropRules } from '../../../lib/propSim';
 import { type Alloc } from '../../../lib/recommendations';
 import { grandRecommend, GRAND_APPETITES, type GrandRec, type Appetite } from '../../../lib/grandRecommend';
 import { InfoTip } from './InfoTip';
+import { VideoButton } from './SectionVideo';
 
 interface MoveOpt { id: string; label: string }
 export interface PortfolioPanelProps {
@@ -159,6 +160,7 @@ export function PortfolioPanel({ doc, moves, onClose, acctRules, acctContracts, 
       <div className="flex items-center gap-1.5 mb-1">
         <span className="text-[11px] font-semibold text-[var(--color-accent)]">🏆 Grand Recommendation</span>
         <InfoTip id="pf-grand" />
+        <VideoButton slug="portfolio-grand" />
       </div>
       <div className="text-[9px] text-[var(--color-text-secondary)] mb-1">Your whole plan per appetite: the correlation-aware basket (each move at its own manual / safest risk) run through the prop-sim together — pass/bust, Sharpe, drawdown, diversification. Click a card to chart it; Apply loads it into the builder.</div>
       <div className="text-[9px] text-[var(--color-text-muted)] mb-2">{acctMode === 'prop' ? 'Prop eval' : 'Live capital'} · each move at its own size · ${acctRules.accountSize.toLocaleString()} acct · target ${acctRules.profitTarget.toLocaleString()} · DD ${acctRules.maxDrawdown.toLocaleString()} ({acctRules.ddMode}) — change these in the Account Profile above the asset switcher.</div>

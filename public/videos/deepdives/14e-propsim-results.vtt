@@ -1,0 +1,51 @@
+WEBVTT
+
+1
+00:00:03.600 --> 00:00:12.504
+Every time the simulator runs, it boils thousands of
+evaluations down to a single row of numbers. Learning to
+read this row is really the whole skill.
+
+2
+00:00:13.104 --> 00:00:32.208
+Start with the pass and bust pair. Pass Rate is how often
+you hit target before busting. Your headline odds. Above
+sixty percent and the move clears these rules comfortably.
+Bust Rate is how often you failed, and it even splits the
+reason. Drawdown, or daily loss. If daily busts dominate,
+your size is too big for the rule.
+
+3
+00:00:32.808 --> 00:00:44.376
+Still Active is the share of runs that hadn't passed or
+busted when the window closed. They simply ran out of
+days. A big still-active number is a warning. The move is
+too slow for this evaluation's time limit.
+
+4
+00:00:44.976 --> 00:00:57.336
+Days to Pass is how long a typical winning run takes. Use
+it to budget the evaluation, and to sanity-check against
+your max-days rule. If days to pass is creeping up near
+your limit, you're cutting it dangerously close.
+
+5
+00:00:57.936 --> 00:01:12.600
+Expected dollars End is the average ending balance across
+every single attempt. Passes and busts together. This is
+the honest one. A move can pass eighty percent of the time
+and still post a weak expected end, if the busts that do
+happen are expensive.
+
+6
+00:01:13.200 --> 00:01:25.056
+The bar underneath shows the split at a glance. Green
+passed, red busted. And the line below it grounds the
+whole thing in reality, telling you what actually happened
+on your real trades, not just in the simulation.
+
+7
+00:01:25.656 --> 00:01:33.528
+Five numbers, one row. Read them together and you know,
+before you spend a single cent, whether this evaluation is
+even worth attempting.

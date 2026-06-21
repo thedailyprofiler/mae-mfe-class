@@ -1,0 +1,54 @@
+WEBVTT
+
+1
+00:00:03.600 --> 00:00:11.160
+If the strike rates told you how often you win, this table
+tells you how often you bleed, and exactly how much. It's
+your drawdown map.
+
+2
+00:00:11.760 --> 00:00:26.760
+It's the MAE Risk Ladder. Remember, MAE is how far a trade
+went against you. Each row here is a level of heat, and it
+answers three things at once. How many of your trades
+pushed beyond that level, how often, and what that
+drawdown costs you in real dollars.
+
+3
+00:00:27.360 --> 00:00:44.280
+Read down the Beyond column. At the top, only ten percent
+of your trades ever went beyond a third of a percent
+against you. The deep, scary moves are rare. Now drop to
+the bottom. By five hundredths of a percent, eighty five
+percent of your trades dipped at least that far. A little
+heat is almost universal.
+
+4
+00:00:44.880 --> 00:01:06.024
+Here's how you actually use it. This is the other half of
+setting your stop. If you place your stop where eighty
+five percent of trades breach it, you'll get tagged out
+constantly, even on trades that would have won. Move it
+out to a level only ten or twenty percent of trades ever
+reach, and you stop bleeding on ordinary noise. The Rate
+column is literally the percent of trades a stop there
+would have killed.
+
+5
+00:01:06.624 --> 00:01:18.000
+And the Exposure column turns each level into real money.
+The total drawdown that threshold represents at your
+current size. It's the cost of choosing a stop too tight,
+measured in dollars, not theory.
+
+6
+00:01:18.600 --> 00:01:29.160
+Pair this with the MFE strike rates, your reward map, and
+you see both sides of the trade at once. A stop loose
+enough to survive your normal heat, and a target tight
+enough to actually get hit.
+
+7
+00:01:29.760 --> 00:01:35.016
+Set your stop where the ladder says the real moves stop,
+not where your fear tells you to put it.

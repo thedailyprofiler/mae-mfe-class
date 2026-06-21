@@ -18,6 +18,7 @@ import { recommendCycle, type Appetite, type CombineRec, type CycleRec } from '.
 import { LabRecommendCards } from './LabRecommendCards';
 import { fmtDollars, dollarTone } from './format';
 import { InfoTip } from './InfoTip';
+import { VideoButton } from './SectionVideo';
 
 interface MoveOpt { id: string; label: string }
 
@@ -107,6 +108,7 @@ export function CyclingPanel({ doc, moves, onClose, acctRules, selected, setSele
           <h2 className="flex items-center gap-2 font-[var(--font-serif)] text-xl font-semibold text-[var(--color-text-primary)] leading-none">
             Account Portfolio Cycling
             <InfoTip id="cycleLab" />
+            <VideoButton slug="account-cycling" />
           </h2>
           <p className="mt-1 text-[10px] font-[var(--font-mono)] uppercase tracking-[0.12em] text-[var(--color-text-muted)]">
             Distribute the trade stream across prop accounts · {tradeCount} trades · {gapLabel}

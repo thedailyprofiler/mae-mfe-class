@@ -1,0 +1,55 @@
+WEBVTT
+
+1
+00:00:03.600 --> 00:00:13.344
+If you trade prop accounts, this is the most important lab
+on the whole dashboard. It answers one brutal question.
+Will this setup pass the evaluation, or blow the account
+trying?
+
+2
+00:00:13.944 --> 00:00:28.632
+It's the Prop Simulator, in Step three. It replays your
+move thousands of times against a real firm's rules. Your
+profit target, your drawdown limit, the daily loss cap,
+the minimum days. And it counts how often you pass, versus
+how often you bust out.
+
+3
+00:00:29.232 --> 00:00:46.104
+The most important setting is one most beginners get
+wrong. Trailing versus static drawdown. Trailing follows
+your highest balance upward, so even giving back profit
+can bust you. Static only measures from your starting
+balance. Trailing is always harsher, and it's the classic
+funded-account rule.
+
+4
+00:00:46.704 --> 00:01:04.872
+Then you read the three outcomes. Pass Rate is the share
+of attempts that hit the target before busting. Above
+sixty percent, and the move clears these rules
+comfortably. Bust Rate is how often you failed, and it
+even splits the reason, drawdown or daily loss. If daily
+busts dominate, your size is too big for the rule.
+
+5
+00:01:05.472 --> 00:01:21.144
+Days to Pass tells you how long a passing run typically
+takes, so you can budget the evaluation. And Expected
+dollars End is the average ending balance across every
+single attempt, pass and bust together. A high pass rate
+still has a low expected end if the busts are expensive.
+
+6
+00:01:21.744 --> 00:01:34.176
+This is where your percentage edge finally meets a prop
+firm's actual rulebook. It turns I think this works into
+this passes sixty eight percent of the time in about nine
+days. That is the entire difference between hoping and
+knowing.
+
+7
+00:01:34.776 --> 00:01:39.864
+Before you ever buy an evaluation, run it right here, a
+thousand times, for free.

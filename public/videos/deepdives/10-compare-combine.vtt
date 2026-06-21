@@ -1,0 +1,55 @@
+WEBVTT
+
+1
+00:00:03.600 --> 00:00:15.624
+Up to now we've analyzed one setup at a time. But real
+traders don't run just one, they run several. This lab
+answers the question that comes next. Which ones should I
+run together, and what actually happens when I do?
+
+2
+00:00:16.224 --> 00:00:31.920
+It's the Compare and Combine lab, in Step three. The big
+idea is this. It nets multiple moves together, day by day,
+in real dollars. Not percentages, dollars. So it can
+safely add a Nasdaq trade to a gold trade, something raw
+percentages could never do.
+
+3
+00:00:32.520 --> 00:00:50.280
+You build two baskets, Set A and Set B. Tick any moves or
+assets into each one. Then the lab plays them out side by
+side and shows you the difference. Is A better than B? And
+what if you simply traded both? Each set can even use its
+own attempt filter, so you can pit first attempts against
+second attempts.
+
+4
+00:00:50.880 --> 00:01:09.552
+Two numbers tell the story here. Win Rate in days is the
+share of trading days the combined basket finished green,
+because when you run several setups at once, what matters
+is the day's net, not each single trade. And Max Drawdown
+is the deepest the combined equity ever fell from its
+high. That is your real risk when you stack setups
+together.
+
+5
+00:01:10.152 --> 00:01:25.944
+And you don't have to guess the combination. The
+recommended baskets pick which moves to pair for you. By
+Kelly sizing for raw growth, by minimum variance for the
+smoothest ride, by maximum Sharpe for balance, or by pure
+diversification. One click sends that basket straight into
+your other tools.
+
+6
+00:01:26.544 --> 00:01:37.680
+This is the very first step from a single edge to a real
+portfolio. Two mediocre setups that don't lose on the same
+days can be far safer, and far steadier, than one great
+setup all by itself.
+
+7
+00:01:38.280 --> 00:01:41.520
+Don't just find an edge. Find edges that fit together.

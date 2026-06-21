@@ -12,6 +12,7 @@ import { recommendSetup, type SetupRec, type VariantInput, type AccountMode } fr
 import type { AssetTicker } from '../../../lib/assets';
 import { mulberry32, type PropRules } from '../../../lib/propSim';
 import { InfoTip } from './InfoTip';
+import { VideoButton, type DeepDiveSlug } from './SectionVideo';
 
 export interface SetupRecommenderPanelProps {
   doc: MaeMfeDocument;
@@ -53,11 +54,11 @@ const hasMulti = (rows: RawRow[]) => { const seen = new Set<string>(); return ro
 const usd = (v: number) => `${v < 0 ? '−' : ''}$${Math.abs(Math.round(v)).toLocaleString()}`;
 const cardCls = 'flex-1 min-w-[210px] bg-[var(--color-bg-inset)] border border-[var(--color-border)] rounded-[6px] px-3 py-2.5';
 
-const APPETITES: { key: keyof Omit<ReturnType<typeof recommendSetup>, 'mode'>; title: string; info: string }[] = [
-  { key: 'fastest', title: '⚡ Fastest Growth', info: 'sr-fastest' },
-  { key: 'safest', title: '🛡 Safest', info: 'sr-safest' },
-  { key: 'bestOverall', title: '🏆 Best Overall', info: 'sr-bestoverall' },
-  { key: 'professional', title: '🏛 Professionally', info: 'sr-professional' },
+const APPETITES: { key: keyof Omit<ReturnType<typeof recommendSetup>, 'mode'>; title: string; info: string; video?: DeepDiveSlug }[] = [
+  { key: 'fastest', title: '⚡ Fastest Growth', info: 'sr-fastest', video: 'setup-fastest' },
+  { key: 'safest', title: '🛡 Safest', info: 'sr-safest', video: 'setup-safest' },
+  { key: 'bestOverall', title: '🏆 Best Overall', info: 'sr-bestoverall', video: 'setup-best' },
+  { key: 'professional', title: '🏛 Professionally', info: 'sr-professional', video: 'setup-professional' },
 ];
 
 export function SetupRecommenderPanel({ doc, asset, moveBase, rules, mode, onApply, current, onApplyBasketTo }: SetupRecommenderPanelProps) {
@@ -161,12 +162,12 @@ export function SetupRecommenderPanel({ doc, asset, moveBase, rules, mode, onApp
 
       {recs && (
         <div className="flex flex-wrap gap-2">
-          {APPETITES.map(({ key, title, info }) => {
+          {APPETITES.map(({ key, title, info, video }) => {
             const r = recs[key];
             return (
               <div key={key} className={cardCls}>
                 <div className="flex items-center justify-between">
-                  <div className="text-[9px] uppercase tracking-wide text-[var(--color-text-secondary)] flex items-center gap-1">{title}<InfoTip id={info} /></div>
+                  <div className="text-[9px] uppercase tracking-wide text-[var(--color-text-secondary)] flex items-center gap-1">{title}<InfoTip id={info} />{video && <VideoButton slug={video} />}</div>
                   {r && <button onClick={() => onApply(r)} className="text-[9px] px-1.5 py-0.5 rounded-[4px] border border-[var(--color-accent)] text-[var(--color-accent)] hover:bg-[var(--color-accent)]/10">Apply</button>}
                 </div>
                 {!r ? <div className="text-[10px] text-[var(--color-text-secondary)] mt-1">no qualifying setup</div> : (

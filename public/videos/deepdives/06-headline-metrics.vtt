@@ -1,0 +1,56 @@
+WEBVTT
+
+1
+00:00:03.600 --> 00:00:12.576
+Six numbers sit across the top of this dashboard, and most
+people glance right past them. But one of them quietly
+predicts whether you'll blow up your account. Let me show
+you which.
+
+2
+00:00:13.176 --> 00:00:34.368
+Start simple. Total P and L is the sum of every trade's
+result in dollars. A win banks your target, a loss takes
+the heat. And Samples is just how many trades are in the
+picture. One quick warning. Below about a hundred trades,
+every number up here is shaky, dominated by a few lucky or
+unlucky outliers. You want a real sample before you trust
+any of this.
+
+3
+00:00:34.968 --> 00:00:48.624
+Win Rate is the share of your trades that reached the
+target. But here's what beginners get backwards. A high
+win rate is not the goal. Plenty of blown-up accounts had
+eighty percent win rates. It only ever tells you how often
+you win, never how much.
+
+4
+00:00:49.224 --> 00:00:55.680
+Average Win Streak is how long your good runs tend to
+last. Nice for confidence, but it's not where the danger
+lives.
+
+5
+00:00:56.280 --> 00:01:22.104
+This is the one that matters most. Loss Streak. The
+longest run of losing trades you've had in a row. Why does
+this single number predict ruin? Because a losing streak
+is exactly what drains an account to zero. If you can only
+stomach three losses in a row, but your history shows runs
+of eight, you will bust before your edge ever gets the
+chance to pay off. Everything in the survival lab, the
+doomsday budget, your risk of ruin, is built around this
+one number.
+
+6
+00:01:22.704 --> 00:01:30.192
+And Span is simply the calendar stretch your data covers.
+A quick reality check that your sample isn't all from one
+freakishly good week.
+
+7
+00:01:30.792 --> 00:01:39.000
+Glance at your P and L if you want. But respect the loss
+streak. It's the number that decides whether you survive
+long enough for your edge to actually win.

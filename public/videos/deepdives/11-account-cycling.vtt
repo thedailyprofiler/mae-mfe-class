@@ -1,0 +1,53 @@
+WEBVTT
+
+1
+00:00:03.600 --> 00:00:15.528
+Here's a trick prop traders use that sounds like cheating,
+but is really just smart math. If one account can't
+survive your worst losing streak, run several, and rotate
+between them. This lab shows you exactly how.
+
+2
+00:00:16.128 --> 00:00:30.576
+It's Account Portfolio Cycling, in Step three. Instead of
+firing every trade on one account, it spreads your trade
+stream across several prop accounts. So when the
+inevitable losing streak finally hits, it lands on one
+account, not all of them at once.
+
+3
+00:00:31.176 --> 00:00:47.376
+The mechanic is gap rotation. With five accounts and one
+firing per trade, each account sits out four trades
+between fires. A four gap. The losing streak gets diluted
+across the rotation, so no single account takes the full
+hit. The sick account bleeds while the others keep
+banking.
+
+4
+00:00:47.976 --> 00:01:02.256
+Size lets you fire more than one account on each trade.
+One times, two times, three times. Each firing account
+takes the full trade, so two times doubles your total P
+and L, and doubles your risk. It is the growth versus
+survival dial.
+
+5
+00:01:02.856 --> 00:01:18.672
+And down here, it tracks every account individually. Its
+net, its peak, and its trailing drawdown. That trailing
+drawdown is exactly what a prop firm watches to bust you.
+So you can see, before risking a cent, whether any account
+in the rotation would breach its limit.
+
+6
+00:01:19.272 --> 00:01:32.640
+This turns I can't pass with one account into a real
+question. How many accounts, at what size, will survive my
+worst streak and still flip? It's the math behind running
+a prop portfolio, instead of gambling one evaluation at a
+time.
+
+7
+00:01:33.240 --> 00:01:36.912
+One account survives luck. A rotation survives the streak.

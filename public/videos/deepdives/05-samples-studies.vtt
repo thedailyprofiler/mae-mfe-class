@@ -1,0 +1,55 @@
+WEBVTT
+
+1
+00:00:03.600 --> 00:00:15.288
+Here's the mistake that quietly wipes out new traders.
+They find something that worked beautifully on past data,
+bet real money on it, and watch it fall apart. This little
+row of tabs is exactly how you avoid that.
+
+2
+00:00:15.888 --> 00:00:28.920
+Start with In-Sample. This is your laboratory. It's the
+original window of trades you used to find your edge, to
+tune your target, your stop, and your setup. Everything
+you discovered here, you discovered by staring at this
+exact data.
+
+3
+00:00:29.520 --> 00:00:43.464
+And that is precisely the danger. It's easy to find a rule
+that looks flawless on data you have already seen. Traders
+call that overfitting. You've basically memorized the
+answers to a test you already took. The real question is
+whether it works on data you have never touched.
+
+4
+00:00:44.064 --> 00:00:59.304
+That is exactly what Out-of-Sample is for. These are later
+windows of trades your edge never saw. You take the same
+rule from your lab, apply it here untouched, and see if it
+still holds up. You get three independent out-of-sample
+windows, so you can check it across different market
+conditions.
+
+5
+00:00:59.904 --> 00:01:14.064
+And the Compare tab puts them side by side. In-sample
+versus out-of-sample, with the difference in strike rate
+and expected value laid right out. If the numbers hold,
+your edge is probably real. If they collapse out of
+sample, you fooled yourself in the lab.
+
+6
+00:01:14.664 --> 00:01:29.376
+One Study is one complete experiment, with its own in-
+sample and out-of-sample buckets. Keep several per setup
+to test different periods or rule tweaks side by side. And
+the All tab simply pools everything you've toggled on into
+one combined view.
+
+7
+00:01:29.976 --> 00:01:36.480
+Build your edge in-sample. Prove it out-of-sample. And
+never trade a rule you haven't tested on data it has never
+seen.

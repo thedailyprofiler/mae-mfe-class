@@ -24,7 +24,7 @@ import { firstTradingDateOnOrAfter, nextTradingDate } from '../../../lib/trading
 import { DashboardBand, DashboardCore } from './DatasetDashboard';
 import { ComparePanel } from './ComparePanel';
 import { RowTable } from './RowTable';
-import { VideoButton } from './SectionVideo';
+import { VideoButton, type DeepDiveSlug } from './SectionVideo';
 import { NumericInput } from './NumericInput';
 import { dollarTone, fmtDollars } from './format';
 import { OOS_KEYS, resolveStudy, type OosKey, type SampleKey } from './maeMfeDocument';
@@ -134,11 +134,13 @@ function TickerMetric({
   value,
   tone,
   info,
+  video,
 }: {
   label: string;
   value: React.ReactNode;
   tone?: string;
   info?: string;
+  video?: DeepDiveSlug;
 }) {
   return (
     <div className="flex-1 min-w-0 px-4 py-2.5">
@@ -150,6 +152,7 @@ function TickerMetric({
       <div className="mt-1 flex items-center gap-1 text-[9px] font-[var(--font-mono)] uppercase tracking-[0.16em] text-[var(--color-text-muted)]">
         {label}
         {info && <InfoTip id={info} />}
+        {video && <VideoButton slug={video} />}
       </div>
     </div>
   );
@@ -393,7 +396,8 @@ export function MoveDashboard({
           </div>
         </div>
 
-        {/* Sample segmented control */}
+        {/* Sample segmented control + how-to video */}
+        <div className="flex items-center gap-2">
         <div
           className="flex items-center rounded-[6px] border border-[var(--color-border)] bg-[var(--color-bg-inset)] p-[3px]"
           role="tablist"
@@ -424,6 +428,8 @@ export function MoveDashboard({
               </button>
             );
           })}
+        </div>
+        <VideoButton slug="samples-studies" />
         </div>
       </header>
 
@@ -614,6 +620,7 @@ export function MoveDashboard({
           value={fmtDollars(activeDash.snapshot.totalPnl)}
           tone={dollarTone(activeDash.snapshot.totalPnl)}
           info="totalPnl"
+          video="headline-metrics"
         />
         <TickerMetric label="Samples" value={activeDash.totalSamples} info="samples" />
         <TickerMetric

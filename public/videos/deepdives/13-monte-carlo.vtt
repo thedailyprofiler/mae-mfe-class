@@ -1,0 +1,63 @@
+WEBVTT
+
+1
+00:00:03.600 --> 00:00:17.880
+Your backtest shows one history, the one that actually
+happened. But the market could have dealt those exact same
+trades in a thousand different orders. Monte Carlo plays
+out all of them, so you see the range of futures, not just
+the single lucky path you happened to get.
+
+2
+00:00:18.480 --> 00:00:32.280
+It's the Monte Carlo lab, in Step three. It takes this
+move and replays it thousands of times, reshuffling and
+redrawing your trades, then shows you the realistic spread
+of where you could end up, and how ugly the drawdown could
+get along the way.
+
+3
+00:00:32.880 --> 00:00:50.424
+There are two flavors. Resample draws your trades with
+replacement. It asks, if I keep trading this edge, what is
+the full range of outcomes? Shuffle keeps the exact same
+trades but reorders them. It asks, same results, did I
+just get lucky with the sequence? Because drawdown depends
+entirely on order.
+
+4
+00:00:51.024 --> 00:01:07.680
+The Median Outcome is the honest middle result. Half the
+simulations did better, half did worse. It's a far more
+trustworthy expected number than your single backtest,
+which might be sitting at a lucky extreme. The range
+around it shows the realistic spread, so you plan for the
+low end, not the average.
+
+5
+00:01:08.280 --> 00:01:21.576
+Then the number that decides survival. Worst Loss Streak.
+The longest run of losers across all of those thousands of
+simulations. This is the streak you actually have to
+budget for. It's the exact number your Doomsday Budget is
+built around.
+
+6
+00:01:22.176 --> 00:01:37.080
+Set your account's drawdown limit, and the lab tells you
+how often a simulated run would breach it. That is your
+real risk of ruin, expressed as a percentage. Under five
+percent is comfortable. Climbing past twenty means this
+move is simply too big for that account.
+
+7
+00:01:37.680 --> 00:01:47.760
+One backtest can fool you with a single lucky run. A
+thousand simulations cannot. This is how you tell a real
+edge from a fluke, and then size it so the bad runs never
+end you.
+
+8
+00:01:48.360 --> 00:01:51.672
+Don't trust one history. Trust the thousand that could
+have been.

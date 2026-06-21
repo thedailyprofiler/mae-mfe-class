@@ -9,6 +9,7 @@ import { buildTradeSeries, runMonteCarlo, mulberry32, type McMode } from '../../
 import { combinedStats, deriveSource, sequenceTrades } from '../../../lib/maeMfeCombine';
 import { buildLabSources } from './labSources';
 import { InfoTip } from './InfoTip';
+import { VideoButton } from './SectionVideo';
 
 interface MoveOpt { id: string; label: string }
 export interface MonteCarloPanelProps {
@@ -91,6 +92,7 @@ export function MonteCarloPanel({ doc, moves, onClose, combineKeys, cycleKeys }:
         <div className="flex items-center gap-1.5">
           <span className="text-[12px] font-semibold text-[var(--color-text-primary)]">Monte Carlo</span>
           <InfoTip id="mc-feature" />
+          <VideoButton slug="monte-carlo" />
         </div>
         <button onClick={onClose} className="text-[10px] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]">close ✕</button>
       </div>

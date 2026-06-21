@@ -9,6 +9,7 @@ import { createPortal } from 'react-dom';
 import type { MaeMfeDocument } from './maeMfeDocument';
 import { buildSeries, computeMatrix, portfolioStats, correlationInsights, isSignificant, type Lens } from '../../../lib/correlation';
 import { InfoTip } from './InfoTip';
+import { VideoButton } from './SectionVideo';
 
 interface MoveOpt { id: string; label: string }
 export interface CorrelationPanelProps {
@@ -94,6 +95,7 @@ export function CorrelationPanel({ doc, moves, onClose }: CorrelationPanelProps)
         <div className="flex items-center gap-1.5">
           <span className="text-[12px] font-semibold text-[var(--color-text-primary)]">Portfolio Correlation</span>
           <InfoTip id="corr-feature" />
+          <VideoButton slug="correlation" />
         </div>
         <button onClick={onClose} className="text-[10px] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]">close ✕</button>
       </div>

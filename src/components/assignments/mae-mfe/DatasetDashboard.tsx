@@ -211,7 +211,7 @@ export function DashboardBand({ dashboard: d }: { dashboard: DashType }) {
     <div className="grid grid-cols-1 md:grid-cols-[1fr_0.85fr_1.5fr] divide-y md:divide-y-0 md:divide-x divide-[var(--color-border)]">
       {/* MAE risk ladder */}
       <div className="py-4 pr-5">
-        <SectionLabel info="maeRiskLadder">MAE Risk Ladder</SectionLabel>
+        <SectionLabel info="maeRiskLadder" video="mae-risk-ladder">MAE Risk Ladder</SectionLabel>
         <table className="w-full text-[12px] tabular-nums">
           <thead>
             <tr>
@@ -249,7 +249,7 @@ export function DashboardBand({ dashboard: d }: { dashboard: DashType }) {
 
       {/* Contract $ per move */}
       <div className="py-4 md:px-5">
-        <SectionLabel info="contractDollarMove">Contract $ / Move</SectionLabel>
+        <SectionLabel info="contractDollarMove" video="contract-dollar">Contract $ / Move</SectionLabel>
         <table className="w-full text-[12px] tabular-nums">
           <thead>
             <tr>
@@ -284,7 +284,7 @@ export function DashboardBand({ dashboard: d }: { dashboard: DashType }) {
       {/* EV heatmap */}
       <div className="py-4 md:pl-5">
         <div className="flex items-baseline justify-between">
-          <SectionLabel info="evMatrix">EV Risk Matrix</SectionLabel>
+          <SectionLabel info="evMatrix" video="ev-risk-matrix">EV Risk Matrix</SectionLabel>
           <span className="text-[9px] font-[var(--font-mono)] text-[var(--color-text-muted)] uppercase tracking-wider hidden xl:block">
             (strike × win$) − (loss × loss$)
           </span>

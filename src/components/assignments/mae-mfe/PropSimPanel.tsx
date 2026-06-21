@@ -17,6 +17,7 @@ import { recommendFlipRoi, ROI_STYLES, type RoiRec, type RoiStyle, recommendFlip
 import type { PropFirmRules } from '../../../lib/propFirmSim';
 import type { AssetTicker } from '../../../lib/assets';
 import { InfoTip } from './InfoTip';
+import { VideoButton } from './SectionVideo';
 
 interface MoveOpt { id: string; label: string }
 export interface PropSimPanelProps {
@@ -170,8 +171,8 @@ export function PropSimPanel({ doc, moves, onClose, onApplyBasketTo, combineKeys
       setBasketBusy(false);
     }, 20);
   };
-  // Auto-run both recommenders once on open (stay open; Re-run after changing rules).
-  useEffect(() => { runFlip(); runRoi(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  // Auto-run all three flip recommenders once on open (stay open; Re-run after changing rules).
+  useEffect(() => { runFlip(); runRoi(); runBasket(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
   const res = useMemo(() => {
     if (!active) return null;
     return runPropSim(active.dollars, rules, { mode, sims: Math.min(Math.max(sims, 50), 10000), rng: mulberry32(seed) });
@@ -217,6 +218,7 @@ export function PropSimPanel({ doc, moves, onClose, onApplyBasketTo, combineKeys
         <div className="flex items-center gap-1.5">
           <span className="text-[12px] font-semibold text-[var(--color-text-primary)]">Prop Simulator</span>
           <InfoTip id="ps-feature" />
+          <VideoButton slug="propsim" />
         </div>
         <button onClick={onClose} className="text-[10px] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]">close ✕</button>
       </div>
@@ -226,6 +228,7 @@ export function PropSimPanel({ doc, moves, onClose, onApplyBasketTo, combineKeys
         <div className="flex items-center gap-2 mb-2 flex-wrap">
           <span className="text-[11px] font-semibold text-[var(--color-accent)]">🏴‍☠️ Best moves to flip</span>
           <InfoTip id="fl-feature" />
+          <VideoButton slug="propsim-best-moves" />
           <span className="text-[9px] text-[var(--color-text-secondary)]">— scans every move for passing your eval; sizes at each move's tuned target/stop</span>
           <button onClick={runFlip} disabled={flipBusy} className="ml-auto text-[10px] px-2.5 py-1 rounded-[5px] border border-[var(--color-accent)] text-[var(--color-accent)] hover:bg-[var(--color-accent)]/10 disabled:opacity-40">{flipBusy ? 'Computing…' : flipRecs ? 'Re-run' : 'Recommend'}</button>
         </div>
@@ -261,6 +264,7 @@ export function PropSimPanel({ doc, moves, onClose, onApplyBasketTo, combineKeys
         <div className="flex items-center gap-2 mb-2 flex-wrap">
           <span className="text-[11px] font-semibold text-[var(--color-accent)]">💸 Best ROI to flip</span>
           <InfoTip id="fr-feature" />
+          <VideoButton slug="propsim-best-roi" />
           <span className="text-[9px] text-[var(--color-text-secondary)]">— net payouts vs $ spent on props, full eval→funded→payout lifecycle</span>
           <button onClick={runRoi} disabled={roiBusy} className="ml-auto text-[10px] px-2.5 py-1 rounded-[5px] border border-[var(--color-accent)] text-[var(--color-accent)] hover:bg-[var(--color-accent)]/10 disabled:opacity-40">{roiBusy ? 'Computing…' : roiRecs ? 'Re-run' : 'Recommend'}</button>
         </div>
@@ -300,6 +304,7 @@ export function PropSimPanel({ doc, moves, onClose, onApplyBasketTo, combineKeys
         <div className="flex items-center gap-2 mb-2 flex-wrap">
           <span className="text-[11px] font-semibold text-[var(--color-accent)]">🧩 Best basket to flip</span>
           <InfoTip id="fb-feature" />
+          <VideoButton slug="propsim-best-basket" />
           <span className="text-[9px] text-[var(--color-text-secondary)]">— which MULTIPLE moves to run together (combining stacks trades/day → passes faster &amp; smoother)</span>
           <button onClick={runBasket} disabled={basketBusy} className="ml-auto text-[10px] px-2.5 py-1 rounded-[5px] border border-[var(--color-accent)] text-[var(--color-accent)] hover:bg-[var(--color-accent)]/10 disabled:opacity-40">{basketBusy ? 'Computing…' : basketRecs ? 'Re-run' : 'Recommend'}</button>
         </div>
@@ -340,7 +345,7 @@ export function PropSimPanel({ doc, moves, onClose, onApplyBasketTo, combineKeys
       {/* prop-firm preset — fills eval rules + flip economics (approximate; edit freely) */}
       <div className="flex flex-wrap items-end gap-2 mb-2 text-[10px]">
         <div className="flex flex-col gap-1">
-          <span className="text-[var(--color-text-secondary)] uppercase tracking-wide flex items-center gap-1">Prop firm<InfoTip id="ps-firm" /></span>
+          <span className="text-[var(--color-text-secondary)] uppercase tracking-wide flex items-center gap-1">Prop firm<InfoTip id="ps-firm" /><VideoButton slug="propsim-setup" /></span>
           <div className="flex gap-1 flex-wrap">
             {FIRM_PRESETS.map((f) => (
               <button key={f.id} onClick={() => applyFirm(f.id, acctSize)} aria-pressed={firmId === f.id}
@@ -407,7 +412,7 @@ export function PropSimPanel({ doc, moves, onClose, onApplyBasketTo, combineKeys
         <>
           {/* headline rates */}
           <div className="flex flex-wrap gap-2 my-3">
-            <div className={cardCls}><div className={lblCls}>Pass Rate<InfoTip id="ps-passrate" /></div><div className={valCls} style={{ color: res.passRate >= 0.5 ? '#5fae7f' : 'var(--color-text-primary)' }}>{(res.passRate * 100).toFixed(0)}%</div></div>
+            <div className={cardCls}><div className={lblCls}>Pass Rate<InfoTip id="ps-passrate" /><VideoButton slug="propsim-results" /></div><div className={valCls} style={{ color: res.passRate >= 0.5 ? '#5fae7f' : 'var(--color-text-primary)' }}>{(res.passRate * 100).toFixed(0)}%</div></div>
             <div className={cardCls}><div className={lblCls}>Bust Rate<InfoTip id="ps-bust" /></div><div className={valCls} style={{ color: res.bustRate > 0.5 ? '#d06666' : 'var(--color-text-primary)' }}>{(res.bustRate * 100).toFixed(0)}%</div><div className="text-[8px] text-[var(--color-text-secondary)] mt-0.5">DD {(res.bustByDD * 100).toFixed(0)}% · daily {(res.bustByDaily * 100).toFixed(0)}%</div></div>
             <div className={cardCls}><div className={lblCls}>Still Active<InfoTip id="ps-active" /></div><div className={valCls}>{(res.activeRate * 100).toFixed(0)}%</div></div>
             <div className={cardCls}><div className={lblCls}>Days to Pass<InfoTip id="ps-daystopass" /></div><div className={valCls}>{res.medianDaysToPass != null ? Math.round(res.medianDaysToPass) : '—'}</div>{res.p10DaysToPass != null && <div className="text-[8px] text-[var(--color-text-secondary)] mt-0.5">{Math.round(res.p10DaysToPass)}–{Math.round(res.p90DaysToPass!)} d range</div>}</div>
@@ -436,6 +441,7 @@ export function PropSimPanel({ doc, moves, onClose, onApplyBasketTo, combineKeys
           <div className="flex items-center gap-1.5 mb-1">
             <span className="text-[12px] font-semibold text-[var(--color-text-primary)]">💀 Doomsday Budget</span>
             <InfoTip id="dd-feature" />
+            <VideoButton slug="doomsday-budget" />
           </div>
           <div className="text-[10px] text-[var(--color-text-primary)] mb-2 leading-relaxed">
             This {isBasket ? 'basket' : 'move'}'s <b>worst losing streak</b> is <b style={{ color: '#d06666' }}>{doom.doomsdayStreak} {isBasket ? 'down days' : ''} in a row</b> (history {doom.histLossStreak} · Monte-Carlo P95 {doom.mcLossStreak}). At {usd(doom.riskPerTrade)} risk per {isBasket ? 'bad combined day' : 'stopped-out trade'}, a full streak digs a <b style={{ color: '#d06666' }}>{usd(doom.doomsdayDrawdown)}</b> hole — your doomsday drawdown. {doom.perAccountCap > 0 ? (doom.survivesOnOne ? <>One {usd(doom.perAccountCap)} account <b style={{ color: '#5fae7f' }}>survives it</b> ({usd(doom.perAccountCap - doom.doomsdayDrawdown)} headroom).</> : <>One {usd(doom.perAccountCap)} account <b style={{ color: '#d06666' }}>can't absorb it</b> — rotate <b>{doom.accountsToSurvive} accounts</b> to share the drawdown.</>) : <>Set a Max DD above to size it.</>}
@@ -454,6 +460,9 @@ export function PropSimPanel({ doc, moves, onClose, onApplyBasketTo, combineKeys
             <div className={cardCls}><div className={lblCls}>Survive on 1?<InfoTip id="dd-survive" /></div><div className={valCls} style={{ color: doom.perAccountCap <= 0 ? undefined : doom.survivesOnOne ? '#5fae7f' : '#d06666' }}>{doom.perAccountCap <= 0 ? '—' : doom.survivesOnOne ? 'Yes ✓' : 'No ✕'}</div></div>
             <div className={cardCls}><div className={lblCls}>Accounts to Survive<InfoTip id="dd-rotation" /></div><div className={valCls} style={{ color: 'var(--color-accent)' }}>{doom.accountsToSurvive || '—'}</div><div className="text-[8px] text-[var(--color-text-muted)] mt-0.5">combined {usd(doom.combinedBudget)}</div></div>
           </div>
+          {doom.ladder.length > 0 && (
+            <div className="flex items-center gap-1.5 mb-1"><span className="text-[9px] uppercase tracking-wide text-[var(--color-text-muted)]">Rotation &amp; scaling ladder</span><VideoButton slug="rotation-ladder" /></div>
+          )}
           {doom.ladder.length > 0 && (
             <table className="text-[10px] font-[var(--font-mono)] tabular-nums">
               <thead><tr className="text-[9px] uppercase tracking-wide text-[var(--color-text-muted)]"><th className="text-left pr-6 pb-1">Props</th><th className="text-right pr-6 pb-1">Bank needed</th><th className="text-right pb-1">Survives streak</th></tr></thead>
