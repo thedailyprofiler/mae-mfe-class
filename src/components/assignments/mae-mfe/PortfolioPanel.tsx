@@ -170,17 +170,34 @@ export function PortfolioPanel({ doc, moves, onClose, acctRules, acctContracts, 
         ))}
       </div>
 
-      {/* $ equity of the selected plan, with the Max-DD bust line + Day-14 marker */}
-      {grandShown && (
-        <div className="mb-4 p-3 rounded-[6px] border border-[var(--color-border)] bg-[var(--color-bg-inset)]/30">
-          <div className="flex items-center gap-1.5 mb-1">
-            <span className="text-[10px] uppercase tracking-wide text-[var(--color-accent)]">{grandShown.title} · combined $ equity</span>
-            <InfoTip id="pf-grandchart" />
-            <span className="text-[9px] text-[var(--color-text-muted)] ml-auto">{grandShown.dates.length} trading days · {acctRules.maxDrawdown ? `bust at −$${acctRules.maxDrawdown.toLocaleString()} (${acctRules.ddMode})` : 'no DD limit'}</span>
+      {/* $ equity of the selected plan: a 14-day risk-of-ruin zoom + the full run.
+          Both trim the flat lead-in (dates before every move has data). */}
+      {grandShown && (() => {
+        const activeDays = grandShown.dollars.length - grandShown.activeFrom;
+        return (
+          <div className="mb-4 p-3 rounded-[6px] border border-[var(--color-border)] bg-[var(--color-bg-inset)]/30">
+            <div className="flex items-center gap-1.5 mb-1">
+              <span className="text-[10px] uppercase tracking-wide text-[var(--color-accent)]">{grandShown.title} · combined $ equity</span>
+              <InfoTip id="pf-grandchart" />
+              <span className="text-[9px] text-[var(--color-text-muted)] ml-auto">{activeDays} active trading days · {acctRules.maxDrawdown ? `bust at −$${acctRules.maxDrawdown.toLocaleString()} (${acctRules.ddMode})` : 'no DD limit'}</span>
+            </div>
+            <div className="flex flex-wrap gap-3">
+              {/* 14-day zoom — the danger window */}
+              {activeDays > 2 && (
+                <div className="flex-1 min-w-[300px]">
+                  <div className="text-[9px] uppercase tracking-wide text-[var(--color-text-secondary)] mb-0.5">⚠ First 14 days — risk-of-ruin window</div>
+                  <GrandDollarChart dollars={grandShown.dollars} rules={acctRules} activeFrom={grandShown.activeFrom} zoomDays={14} />
+                </div>
+              )}
+              {/* full run — zoomed out */}
+              <div className="flex-1 min-w-[300px]">
+                <div className="text-[9px] uppercase tracking-wide text-[var(--color-text-secondary)] mb-0.5">Full run — all {activeDays} days</div>
+                <GrandDollarChart dollars={grandShown.dollars} rules={acctRules} activeFrom={grandShown.activeFrom} />
+              </div>
+            </div>
           </div>
-          <GrandDollarChart dollars={grandShown.dollars} rules={acctRules} />
-        </div>
-      )}
+        );
+      })()}
 
       {/* ── Builder ───────────────────────────────────────────────────── */}
       <div className="flex items-center gap-1.5 mb-2">
@@ -231,14 +248,17 @@ export function PortfolioPanel({ doc, moves, onClose, acctRules, acctContracts, 
  * equity = cumulative $; the bust line is the trailing (peak − MaxDD) or static
  * (−MaxDD) floor — touching it = busting the account. Vertical marker at day 14.
  */
-function GrandDollarChart({ dollars, rules }: { dollars: number[]; rules: PropRules }) {
-  const W = 720, H = 190, padL = 52, padR = 12, padT = 12, padB = 24;
-  if (dollars.length < 2) return <div className="text-[10px] text-[var(--color-text-secondary)] h-[120px] flex items-center">Not enough days to chart.</div>;
+function GrandDollarChart({ dollars, rules, activeFrom = 0, zoomDays }: { dollars: number[]; rules: PropRules; activeFrom?: number; zoomDays?: number }) {
+  const W = 720, H = 190, padL = 58, padR = 14, padT = 14, padB = 28;
+  // Trim the flat lead-in (dates before every move has data), then optionally zoom to N days.
+  const active = dollars.slice(activeFrom);
+  const shown = zoomDays != null ? active.slice(0, zoomDays) : active;
+  if (shown.length < 2) return <div className="text-[10px] text-[var(--color-text-secondary)] h-[120px] flex items-center">Not enough days to chart.</div>;
   // Cumulative equity + the trailing/static bust floor per day.
   const equity: number[] = []; const floor: number[] = [];
   let eq = 0, peak = 0;
   const dd = rules.maxDrawdown > 0 ? rules.maxDrawdown : 0;
-  for (const d of dollars) {
+  for (const d of shown) {
     eq += d; if (eq > peak) peak = eq;
     equity.push(eq);
     floor.push(dd ? (rules.ddMode === 'trailing' ? peak - dd : -dd) : NaN);
@@ -254,30 +274,36 @@ function GrandDollarChart({ dollars, rules }: { dollars: number[]; rules: PropRu
   const up = equity[n - 1] >= 0;
   const col = up ? '#5fae7f' : '#d06666';
   const usdT = (v: number) => `${v < 0 ? '−' : ''}$${Math.abs(Math.round(v)).toLocaleString()}`;
-  const day14 = n > 14 ? x(13) : null; // 14th trading day (0-indexed 13)
-  const ticks = [hi, (hi + lo) / 2, lo];
+  const day14 = (zoomDays == null && n > 14) ? x(13) : null; // marker only on the full view
+  const yTicks = Array.from({ length: 5 }, (_, k) => lo + (span * k) / 4);          // 5 horizontal lines
+  const xCount = Math.min(zoomDays != null ? 5 : 5, n);
+  const xTicks = Array.from(new Set(Array.from({ length: xCount }, (_, k) => Math.round((k / (xCount - 1)) * (n - 1))))); // even day ticks
   return (
     <svg viewBox={`0 0 ${W} ${H}`} className="w-full h-auto" preserveAspectRatio="xMidYMid meet">
-      {ticks.map((t, i) => (
-        <g key={i}>
-          <line x1={padL} x2={W - padR} y1={y(t)} y2={y(t)} stroke="var(--color-border)" strokeWidth={0.5} opacity={0.5} />
-          <text x={padL - 6} y={y(t) + 3} textAnchor="end" fontSize={9} fill="var(--color-text-secondary)" fontFamily="var(--font-mono)">{usdT(t)}</text>
+      {yTicks.map((t, i) => (
+        <g key={`y${i}`}>
+          <line x1={padL} x2={W - padR} y1={y(t)} y2={y(t)} stroke="var(--color-border)" strokeWidth={0.5} opacity={0.4} />
+          <text x={padL - 6} y={y(t) + 3} textAnchor="end" fontSize={8.5} fill="var(--color-text-secondary)" fontFamily="var(--font-mono)">{usdT(t)}</text>
+        </g>
+      ))}
+      {/* vertical day gridlines + labels */}
+      {xTicks.map((i, k) => (
+        <g key={`x${k}`}>
+          <line x1={x(i)} x2={x(i)} y1={padT} y2={H - padB} stroke="var(--color-border)" strokeWidth={0.5} opacity={0.22} />
+          <text x={x(i)} y={H - 9} textAnchor={k === 0 ? 'start' : k === xTicks.length - 1 ? 'end' : 'middle'} fontSize={8} fill="var(--color-text-muted)" fontFamily="var(--font-mono)">day {i + 1}</text>
         </g>
       ))}
       {/* zero baseline */}
       <line x1={padL} x2={W - padR} y1={y(0)} y2={y(0)} stroke="var(--color-text-secondary)" strokeWidth={0.8} opacity={0.5} />
       {/* bust floor (fed by Account Profile Max DD) */}
       {dd > 0 && <path d={floorPath} fill="none" stroke="#d06666" strokeWidth={1.2} strokeDasharray="4 3" opacity={0.85} />}
-      {/* Day-14 risk-of-ruin marker */}
+      {/* Day-14 risk-of-ruin marker (full view only) */}
       {day14 !== null && (
         <g>
           <line x1={day14} x2={day14} y1={padT} y2={H - padB} stroke="var(--color-accent)" strokeWidth={1} strokeDasharray="3 3" opacity={0.7} />
           <text x={day14 + 3} y={padT + 8} fontSize={8} fill="var(--color-accent)" fontFamily="var(--font-mono)">Day 14</text>
         </g>
       )}
-      {/* x-axis day labels */}
-      <text x={padL} y={H - 6} fontSize={8} fill="var(--color-text-muted)" fontFamily="var(--font-mono)">day 1</text>
-      <text x={W - padR} y={H - 6} textAnchor="end" fontSize={8} fill="var(--color-text-muted)" fontFamily="var(--font-mono)">day {n}</text>
       <path d={`${eqPath} L${x(n - 1).toFixed(1)} ${y(0).toFixed(1)} L${x(0).toFixed(1)} ${y(0).toFixed(1)} Z`} fill={col} opacity={0.12} />
       <path d={eqPath} fill="none" stroke={col} strokeWidth={1.6} />
       {dd > 0 && <text x={W - padR} y={y(floor[n - 1]) - 3} textAnchor="end" fontSize={8} fill="#d06666" fontFamily="var(--font-mono)">bust line</text>}
@@ -285,24 +311,34 @@ function GrandDollarChart({ dollars, rules }: { dollars: number[]; rules: PropRu
   );
 }
 
-/** Cumulative equity line with a zero baseline. */
+/** Cumulative % equity line with a zero baseline + defined x/y axes. */
 function EquityChart({ equity }: { equity: number[] }) {
-  const W = 640, H = 150, padL = 40, padR = 8, padT = 8, padB = 18;
+  const W = 640, H = 156, padL = 46, padR = 10, padT = 10, padB = 24;
   if (equity.length < 2) return <div className="text-[10px] text-[var(--color-text-secondary)] h-[150px] flex items-center">Select at least one move with 2+ days to chart.</div>;
   const lo = Math.min(0, ...equity), hi = Math.max(0, ...equity);
   const span = hi - lo || 1;
-  const x = (i: number) => padL + (i / (equity.length - 1)) * (W - padL - padR);
+  const nn = equity.length;
+  const x = (i: number) => padL + (i / (nn - 1)) * (W - padL - padR);
   const y = (v: number) => padT + (1 - (v - lo) / span) * (H - padT - padB);
   const path = equity.map((v, i) => `${i === 0 ? 'M' : 'L'}${x(i).toFixed(1)} ${y(v).toFixed(1)}`).join(' ');
-  const area = `${path} L${x(equity.length - 1).toFixed(1)} ${y(0).toFixed(1)} L${x(0).toFixed(1)} ${y(0).toFixed(1)} Z`;
-  const up = equity[equity.length - 1] >= 0;
+  const area = `${path} L${x(nn - 1).toFixed(1)} ${y(0).toFixed(1)} L${x(0).toFixed(1)} ${y(0).toFixed(1)} Z`;
+  const up = equity[nn - 1] >= 0;
   const col = up ? '#5fae7f' : '#d06666';
+  const yTicks = Array.from({ length: 5 }, (_, k) => lo + (span * k) / 4);
+  const xCount = Math.min(5, nn);
+  const xTicks = Array.from(new Set(Array.from({ length: xCount }, (_, k) => Math.round((k / (xCount - 1)) * (nn - 1)))));
   return (
     <svg viewBox={`0 0 ${W} ${H}`} className="w-full h-auto" preserveAspectRatio="xMidYMid meet">
-      {[hi, (hi + lo) / 2, lo].map((t, i) => (
-        <g key={i}>
-          <line x1={padL} x2={W - padR} y1={y(t)} y2={y(t)} stroke="var(--color-border)" strokeWidth={0.5} opacity={0.5} />
-          <text x={padL - 5} y={y(t) + 3} textAnchor="end" fontSize={9} fill="var(--color-text-secondary)" fontFamily="var(--font-mono)">{t >= 0 ? '+' : ''}{t.toFixed(1)}%</text>
+      {yTicks.map((t, i) => (
+        <g key={`y${i}`}>
+          <line x1={padL} x2={W - padR} y1={y(t)} y2={y(t)} stroke="var(--color-border)" strokeWidth={0.5} opacity={0.4} />
+          <text x={padL - 5} y={y(t) + 3} textAnchor="end" fontSize={8.5} fill="var(--color-text-secondary)" fontFamily="var(--font-mono)">{t >= 0 ? '+' : ''}{t.toFixed(1)}%</text>
+        </g>
+      ))}
+      {xTicks.map((i, k) => (
+        <g key={`x${k}`}>
+          <line x1={x(i)} x2={x(i)} y1={padT} y2={H - padB} stroke="var(--color-border)" strokeWidth={0.5} opacity={0.22} />
+          <text x={x(i)} y={H - 8} textAnchor={k === 0 ? 'start' : k === xTicks.length - 1 ? 'end' : 'middle'} fontSize={8} fill="var(--color-text-muted)" fontFamily="var(--font-mono)">day {i + 1}</text>
         </g>
       ))}
       <line x1={padL} x2={W - padR} y1={y(0)} y2={y(0)} stroke="var(--color-text-secondary)" strokeWidth={0.8} opacity={0.6} />

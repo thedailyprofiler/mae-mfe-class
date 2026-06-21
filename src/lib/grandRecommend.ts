@@ -45,6 +45,7 @@ export interface GrandRec {
   rationale: string;
   dates: string[];         // combined trading dates (for the $ equity chart)
   dollars: number[];       // combined per-date $ P&L (same length as dates)
+  activeFrom: number;      // index where every allocated move has data (trim flat lead-in)
 }
 
 /** Inverse-volatility (risk-parity) weights over a set of moves — institutional sizing. */
@@ -54,17 +55,26 @@ function riskParityAlloc(evals: MoveEval[]): Alloc[] {
   return inv.map((x) => ({ key: x.e.key, label: x.e.label, weight: x.w / sum }));
 }
 
-/** Weighted-sum the per-move daily $ into one combined portfolio $ stream (by date). */
-function combinedDollars(dollarSeries: DollarSeries[], alloc: Alloc[]): { dates: string[]; dollars: number[] } {
+/**
+ * Weighted-sum the per-move daily $ into one combined portfolio $ stream (by date).
+ * `activeFrom` = index of the first date on which EVERY allocated move has data
+ * (= max of each move's earliest date). Before it the basket is only partially
+ * live, so the equity curve is artificially flat — charts trim to it.
+ */
+function combinedDollars(dollarSeries: DollarSeries[], alloc: Alloc[]): { dates: string[]; dollars: number[]; activeFrom: number } {
   const wOf = new Map(alloc.map((a) => [a.key, a.weight]));
   const byDate = new Map<string, number>();
+  let latestFirst = ''; // the max over moves of each move's earliest date
   for (const ds of dollarSeries) {
     const w = wOf.get(ds.key);
-    if (!w) continue;
+    if (!w || !ds.dates.length) continue;
+    const firstOfMove = ds.dates.reduce((a, b) => (a < b ? a : b));
+    if (firstOfMove > latestFirst) latestFirst = firstOfMove;
     ds.dates.forEach((d, i) => byDate.set(d, (byDate.get(d) ?? 0) + ds.dollars[i] * w));
   }
   const dates = [...byDate.keys()].sort();
-  return { dates, dollars: dates.map((d) => byDate.get(d)!) };
+  const idx = latestFirst ? dates.findIndex((d) => d >= latestFirst) : 0;
+  return { dates, dollars: dates.map((d) => byDate.get(d)!), activeFrom: Math.max(0, idx) };
 }
 
 const RATIONALE: Record<Appetite, string> = {
@@ -95,7 +105,7 @@ export function grandRecommend(doc: MaeMfeDocument, rules: PropRules, label: (m:
   for (const { key, title } of GRAND_APPETITES) {
     const alloc = allocFor(key);
     if (!alloc.length) { out[key] = null; continue; }
-    const { dates, dollars: combined } = combinedDollars(dollarSeries, alloc);
+    const { dates, dollars: combined, activeFrom } = combinedDollars(dollarSeries, alloc);
     if (!combined.length) { out[key] = null; continue; }
     const prop = runPropSim(combined, rules, { mode: 'bootstrap', sims: opts.sims, rng: opts.rng });
     const m = seriesMetrics(combined);
@@ -108,7 +118,7 @@ export function grandRecommend(doc: MaeMfeDocument, rules: PropRules, label: (m:
       expEnd: prop.meanFinal, medianDays: prop.medianDaysToPass,
       sharpe: m.sharpe, maxDD: m.maxDD, diversification: port?.diversification ?? 0,
       rationale: RATIONALE[key],
-      dates, dollars: combined,
+      dates, dollars: combined, activeFrom,
     };
   }
   return out;
