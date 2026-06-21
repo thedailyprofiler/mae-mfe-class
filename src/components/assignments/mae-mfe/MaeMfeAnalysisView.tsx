@@ -463,7 +463,11 @@ export function MaeMfeAnalysisView({
       <StepBar n={1} title="Pick your Move" open={openStep === 1} onToggle={() => openStepToggle(1)}>
         <SectionGuide step={1} />
         <p className="text-[11px] text-[var(--color-text-secondary)] mb-2">Draw the range — the geometry is the config. Here’s how a move is picked on the chart:</p>
-        <video controls preload="metadata" className="w-full max-w-[880px] rounded-[8px] border border-[var(--color-border)]" src="/videos/pick-your-move.mp4" />
+        {/* eslint-disable-next-line jsx-a11y/media-has-caption — caption track IS provided below */}
+        <video controls preload="metadata" className="w-full max-w-[880px] rounded-[8px] border border-[var(--color-border)]">
+          <source src="/videos/pick-your-move.mp4" type="video/mp4" />
+          <track kind="captions" srcLang="en" label="English" src="/videos/pick-your-move.vtt" default />
+        </video>
       </StepBar>
 
       {/* ─── STEP 2 — Build your business plan ────────────────────── */}
