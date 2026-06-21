@@ -31,11 +31,12 @@ export interface PropSimPanelProps {
 }
 
 type ApplyLab = 'compare' | 'cycle' | 'montecarlo' | 'portfolio' | 'propsim';
+// Cross-lab SEND→ targets for a basket card. Prop Sim is omitted — "Apply" IS the
+// use-on-this-page action (loads the basket as the Prop Sim's active source).
 const BASKET_TARGETS: { lab: ApplyLab; label: string }[] = [
   { lab: 'compare', label: 'Compare' },
   { lab: 'cycle', label: 'Cycle' },
-  { lab: 'montecarlo', label: 'Monte Carlo' },
-  { lab: 'propsim', label: 'Prop Sim' },
+  { lab: 'montecarlo', label: 'MC' },
   { lab: 'portfolio', label: 'Portfolio' },
 ];
 
@@ -147,6 +148,12 @@ export function PropSimPanel({ doc, moves, onClose, onApplyBasketTo, combineKeys
     const idx = series.findIndex((s) => s.key === rec.key);
     if (idx >= 0) setSel(idx);
     setContracts(rec.contracts);
+  };
+  // Apply a basket = load it as this page's ▣ Combined basket source (series[0]) and select it.
+  const applyBasket = (b: FlipBasket, source: string) => {
+    if (!onApplyBasketTo) return;
+    onApplyBasketTo(b.keys, 'propsim', source); // sets combineKeys → rebuilds the combined source
+    setSel(0); // ▣ Combined basket is prepended at index 0 once combineKeys is non-empty
   };
   // "Send this one move →" a chosen lab (single-move recs). Prop Sim is "use here" (Apply).
   const SINGLE_TARGETS: { lab: ApplyLab; label: string }[] = [
@@ -315,7 +322,10 @@ export function PropSimPanel({ doc, moves, onClose, onApplyBasketTo, combineKeys
               const b = basketRecs[key];
               return (
                 <div key={key} className="flex-1 min-w-[230px] bg-[var(--color-bg-inset)] border border-[var(--color-border)] rounded-[6px] px-3 py-2">
-                  <div className={lblCls}>{title}<InfoTip id={info} /></div>
+                  <div className="flex items-center justify-between">
+                    <div className={lblCls}>{title}<InfoTip id={info} /></div>
+                    {b && <button onClick={() => applyBasket(b, `Flip basket · ${title}`)} className="text-[9px] px-1.5 py-0.5 rounded-[4px] border border-[var(--color-accent)] text-[var(--color-accent)] hover:bg-[var(--color-accent)]/10">Apply</button>}
+                  </div>
                   {!b ? <div className="text-[9px] text-[var(--color-text-secondary)] mt-1">no net-positive basket</div> : (
                     <>
                       <div className="text-[9px] text-[var(--color-text-muted)] mt-1 leading-snug">{note}</div>
@@ -327,7 +337,7 @@ export function PropSimPanel({ doc, moves, onClose, onApplyBasketTo, combineKeys
                       </div>
                       {onApplyBasketTo && (
                         <div className="flex items-center gap-1 mt-1.5 flex-wrap">
-                          <span className="text-[8px] uppercase tracking-wide text-[var(--color-text-muted)]">Apply→</span>
+                          <span className="text-[8px] uppercase tracking-wide text-[var(--color-text-muted)]">Send→</span>
                           {BASKET_TARGETS.map((t) => (
                             <button key={t.lab} onClick={() => onApplyBasketTo(b.keys, t.lab, `Flip basket · ${title}`)} className="text-[8px] px-1.5 py-0.5 rounded-[4px] border border-[var(--color-accent)]/70 text-[var(--color-accent)] hover:bg-[var(--color-accent)]/10">{t.label}</button>
                           ))}
