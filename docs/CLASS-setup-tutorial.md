@@ -7,8 +7,9 @@
 > **Every prompt you paste into Claude is in a copy box.** Copy it exactly.
 > *(Using the finished dashboard is a separate video — this is purely setup + how it was built.)*
 >
-> Bridge reference (the tool we use to talk to TradingView): the author's setup post —
-> https://x.com/Tradesdontlie/status/2039080409581891890 — repo: `github.com/tradesdontlie/tradingview-mcp`.
+> **Credit:** the TradingView bridge that makes the data collection possible is **`tradingview-mcp`**,
+> built by **@Tradesdontlie** — setup post: https://x.com/Tradesdontlie/status/2039080409581891890 ·
+> repo: `github.com/tradesdontlie/tradingview-mcp`. We use his tool and his steps (see Part 3).
 
 ---
 
@@ -137,8 +138,17 @@ Pro/Max subscription or API key — see Part 0.5), approve, come back to PowerSh
 
 ## Part 3 — Set up the TradingView bridge
 
-This lets Claude read your chart. You need the **TradingView Desktop** app installed
-and logged in (download from tradingview.com if you don't have it).
+> **Where this comes from — credit where it's due.** The TradingView bridge isn't ours. It's an
+> open-source tool, **`tradingview-mcp`**, built by **@Tradesdontlie**. We're simply *using* his
+> tool and following *his* setup steps. Go read it from the source and give him a follow:
+> - Setup post: **https://x.com/Tradesdontlie/status/2039080409581891890**
+> - Repo (the real docs): **https://github.com/tradesdontlie/tradingview-mcp**
+>
+> Everything in this Part is his work — if the steps below ever drift, his repo's `SETUP_GUIDE.md`
+> is the authority.
+
+This bridge is what lets Claude *read* your chart. You need the **TradingView Desktop** app
+installed and logged in (download from tradingview.com if you don't have it).
 
 ### 3.1 Let Claude install the bridge — paste this prompt (Claude figures out your folders):
 ```
