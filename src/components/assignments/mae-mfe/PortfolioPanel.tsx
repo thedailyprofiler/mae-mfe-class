@@ -10,9 +10,9 @@
 import { Fragment, useEffect, useMemo, useState } from 'react';
 import type { MaeMfeDocument } from './maeMfeDocument';
 import { buildSeries, computePortfolio } from '../../../lib/portfolio';
-import { mulberry32, type PropRules } from '../../../lib/propSim';
+import { mulberry32, buildOwnSizeDollarSeries, type PropRules } from '../../../lib/propSim';
 import { type Alloc } from '../../../lib/recommendations';
-import { grandRecommend, GRAND_APPETITES, type GrandRec, type Appetite } from '../../../lib/grandRecommend';
+import { grandRecommend, combinedDollars, GRAND_APPETITES, type GrandRec, type Appetite } from '../../../lib/grandRecommend';
 import { InfoTip } from './InfoTip';
 import { VideoButton } from './SectionVideo';
 
@@ -114,12 +114,21 @@ export function PortfolioPanel({ doc, moves, onClose, acctRules, acctContracts, 
   const rules = acctRules;
   // Grand recommendation — the full plan per appetite (basket + combined survival).
   const grand = useMemo(() => grandRecommend(doc, rules, moveLabel, { sims: 1200, rng: mulberry32(1) }), [doc, rules, moveLabel]);
-  // Which appetite's $ equity curve is charted (with the Max-DD bust line + Day-14 marker).
+  // Which appetite card is highlighted (clicking/applying a card loads it into the builder).
   const [grandSel, setGrandSel] = useState<Appetite>('bestOverall');
-  const grandShown = grand[grandSel] ?? grand.bestOverall ?? grand.safest ?? grand.fastest ?? grand.professional;
 
   const chosen = series.filter((s) => isIn(s.key));
   const port = useMemo(() => computePortfolio(chosen, chosen.map((s) => wOf(s.key))), [chosen, weights]);
+
+  // The builder is the SINGLE source of truth for all three charts. The $ charts
+  // (top: 14-day zoom + full) read this combined $ series; the % chart reads `port`.
+  // Recommendation "Apply" just loads the builder, so recs and manual edits both drive all three.
+  const dollarSeries = useMemo(() => buildOwnSizeDollarSeries(doc, moveLabel), [doc, moveLabel]);
+  const built = useMemo(() => {
+    const sumW = chosen.reduce((s, c) => s + wOf(c.key), 0) || 1;
+    const alloc = chosen.map((s) => ({ key: s.key, label: s.label, weight: wOf(s.key) / sumW }));
+    return combinedDollars(dollarSeries, alloc); // { dates, dollars, activeFrom }
+  }, [dollarSeries, chosen, weights]);
 
   const applyAlloc = (alloc: Alloc[]) => {
     const inc: Record<string, boolean> = {};
@@ -162,39 +171,44 @@ export function PortfolioPanel({ doc, moves, onClose, acctRules, acctContracts, 
         <InfoTip id="pf-grand" />
         <VideoButton slug="portfolio-grand" />
       </div>
-      <div className="text-[9px] text-[var(--color-text-secondary)] mb-1">Your whole plan per appetite: the correlation-aware basket (each move at its own manual / safest risk) run through the prop-sim together — pass/bust, Sharpe, drawdown, diversification. Click a card to chart it; Apply loads it into the builder.</div>
+      <div className="text-[9px] text-[var(--color-text-secondary)] mb-1">Your whole plan per appetite: the correlation-aware basket (each move at its own manual / safest risk) run through the prop-sim together — pass/bust, Sharpe, drawdown, diversification. Click a card (or Apply) to load it into the builder below — the builder drives all three charts. Then fine-tune the moves/weights to update everything live.</div>
       <div className="text-[9px] text-[var(--color-text-muted)] mb-2">{acctMode === 'prop' ? 'Prop eval' : 'Live capital'} · each move at its own size · ${acctRules.accountSize.toLocaleString()} acct · target ${acctRules.profitTarget.toLocaleString()} · DD ${acctRules.maxDrawdown.toLocaleString()} ({acctRules.ddMode}) — change these in the Account Profile above the asset switcher.</div>
       <div className="flex flex-wrap gap-2 mb-3">
         {GRAND_APPETITES.map(({ key, title, info }) => (
-          <GrandCard key={key} rec={grand[key]} title={title} info={info} mode={acctMode} selected={grandSel === key} onSelect={() => setGrandSel(key)} onApply={() => grand[key] && applyAlloc(grand[key]!.alloc)} onApplyBasketTo={onApplyBasketTo} />
+          <GrandCard key={key} rec={grand[key]} title={title} info={info} mode={acctMode} selected={grandSel === key} onSelect={() => { setGrandSel(key); if (grand[key]) applyAlloc(grand[key]!.alloc); }} onApply={() => grand[key] && applyAlloc(grand[key]!.alloc)} onApplyBasketTo={onApplyBasketTo} />
         ))}
       </div>
 
-      {/* $ equity of the selected plan: a 14-day risk-of-ruin zoom + the full run.
-          Both trim the flat lead-in (dates before every move has data). */}
-      {grandShown && (() => {
-        const activeDays = grandShown.dollars.length - grandShown.activeFrom;
+      {/* $ equity of the BUILT blend (single source of truth): a 14-day risk-of-ruin
+          zoom + the full run. Both trim the flat lead-in (dates before every move has data). */}
+      {(() => {
+        const activeDays = built.dollars.length - built.activeFrom;
+        const ready = built.dollars.length > 1 && activeDays > 1;
         return (
           <div className="mb-4 p-3 rounded-[6px] border border-[var(--color-border)] bg-[var(--color-bg-inset)]/30">
             <div className="flex items-center gap-1.5 mb-1">
-              <span className="text-[10px] uppercase tracking-wide text-[var(--color-accent)]">{grandShown.title} · combined $ equity</span>
+              <span className="text-[10px] uppercase tracking-wide text-[var(--color-accent)]">{chosen.length ? `${chosen.length} move${chosen.length === 1 ? '' : 's'}` : 'No moves selected'} · combined $ equity</span>
               <InfoTip id="pf-grandchart" />
-              <span className="text-[9px] text-[var(--color-text-muted)] ml-auto">{activeDays} active trading days · {acctRules.maxDrawdown ? `bust at −$${acctRules.maxDrawdown.toLocaleString()} (${acctRules.ddMode})` : 'no DD limit'}</span>
+              {ready && <span className="text-[9px] text-[var(--color-text-muted)] ml-auto">{activeDays} active trading days · {acctRules.maxDrawdown ? `bust at −$${acctRules.maxDrawdown.toLocaleString()} (${acctRules.ddMode})` : 'no DD limit'}</span>}
             </div>
-            <div className="flex flex-wrap gap-3">
-              {/* 14-day zoom — the danger window */}
-              {activeDays > 2 && (
+            {!ready ? (
+              <div className="text-[10px] text-[var(--color-text-secondary)] h-[120px] flex items-center">Pick a recommendation card or check moves below to chart the blend.</div>
+            ) : (
+              <div className="flex flex-wrap gap-3">
+                {/* 14-day zoom — the danger window */}
+                {activeDays > 2 && (
+                  <div className="flex-1 min-w-[300px]">
+                    <div className="text-[9px] uppercase tracking-wide text-[var(--color-text-secondary)] mb-0.5">⚠ First 14 days — risk-of-ruin window</div>
+                    <GrandDollarChart dollars={built.dollars} rules={acctRules} activeFrom={built.activeFrom} zoomDays={14} />
+                  </div>
+                )}
+                {/* full run — zoomed out */}
                 <div className="flex-1 min-w-[300px]">
-                  <div className="text-[9px] uppercase tracking-wide text-[var(--color-text-secondary)] mb-0.5">⚠ First 14 days — risk-of-ruin window</div>
-                  <GrandDollarChart dollars={grandShown.dollars} rules={acctRules} activeFrom={grandShown.activeFrom} zoomDays={14} />
+                  <div className="text-[9px] uppercase tracking-wide text-[var(--color-text-secondary)] mb-0.5">Full run — all {activeDays} days</div>
+                  <GrandDollarChart dollars={built.dollars} rules={acctRules} activeFrom={built.activeFrom} />
                 </div>
-              )}
-              {/* full run — zoomed out */}
-              <div className="flex-1 min-w-[300px]">
-                <div className="text-[9px] uppercase tracking-wide text-[var(--color-text-secondary)] mb-0.5">Full run — all {activeDays} days</div>
-                <GrandDollarChart dollars={grandShown.dollars} rules={acctRules} activeFrom={grandShown.activeFrom} />
               </div>
-            </div>
+            )}
           </div>
         );
       })()}

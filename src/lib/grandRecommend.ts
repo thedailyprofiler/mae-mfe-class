@@ -61,7 +61,7 @@ function riskParityAlloc(evals: MoveEval[]): Alloc[] {
  * (= max of each move's earliest date). Before it the basket is only partially
  * live, so the equity curve is artificially flat — charts trim to it.
  */
-function combinedDollars(dollarSeries: DollarSeries[], alloc: Alloc[]): { dates: string[]; dollars: number[]; activeFrom: number } {
+export function combinedDollars(dollarSeries: DollarSeries[], alloc: Alloc[]): { dates: string[]; dollars: number[]; activeFrom: number } {
   const wOf = new Map(alloc.map((a) => [a.key, a.weight]));
   const byDate = new Map<string, number>();
   let latestFirst = ''; // the max over moves of each move's earliest date
