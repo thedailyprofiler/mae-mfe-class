@@ -15,6 +15,7 @@
 import {
   computeDatasetDashboard,
   computeCrossComparison,
+  dayOfWeekBreakdown,
   deriveRow,
   deriveRows,
   pctToDollarsMNQ,
@@ -343,5 +344,46 @@ describe('edge cases', () => {
     expect(derived[0].dollarMFE).toBeNull();
     expect(derived[1].isWin).toBe(false);
     expect(derived[1].dollarMAE).toBeNull();
+  });
+});
+
+describe('dayOfWeekBreakdown', () => {
+  // 2024-01-01 is a Monday → 01=Mon, 02=Tue, 03=Wed … (read at noon UTC).
+  const mk = (i: number, date: string | null, mae: number, mfe: number): RawRow =>
+    ({ rowIndex: i, tradeDate: date, maePct: mae, mfePct: mfe, contracts: 5, refPrice: 22500 });
+  const rows: RawRow[] = [
+    mk(1, '2024-01-01', 0.02, 0.50), // Mon win  (+0.1%, +$225)
+    mk(2, '2024-01-01', 0.30, 0.05), // Mon loss (−0.30%, −$675)
+    mk(3, '2024-01-02', 0.02, 0.20), // Tue win
+    mk(4, null, 0.02, 0.5),          // no date → skipped
+  ];
+  const derived = deriveRows(rows, SAMPLE_CFG); // minCashflow 0.1, no stop
+  const dow = dayOfWeekBreakdown(derived, 0.1);
+
+  it('groups by weekday, skips undated rows, omits empty weekdays', () => {
+    expect(dow.map((d) => d.label)).toEqual(['Mon', 'Tue']); // Wed–Fri omitted (no trades)
+    const mon = dow.find((d) => d.label === 'Mon')!;
+    expect(mon.n).toBe(2);
+    expect(mon.wins).toBe(1);
+    expect(mon.winRate).toBeCloseTo(0.5, 6);
+  });
+
+  it('averages the per-trade result under the sync contract (+minCf win / −MAE loss)', () => {
+    const mon = dow.find((d) => d.label === 'Mon')!;
+    expect(mon.avgPct).toBeCloseTo((0.1 + -0.30) / 2, 6); // −0.10%
+    const tue = dow.find((d) => d.label === 'Tue')!;
+    expect(tue.avgPct).toBeCloseTo(0.1, 6);
+    expect(tue.winRate).toBe(1);
+  });
+
+  it('sums priced $ per weekday (win +$225, loss −$675)', () => {
+    const mon = dow.find((d) => d.label === 'Mon')!;
+    expect(mon.totalPnl).toBeCloseTo(225 - 675, 6); // −$450
+    expect(dow.find((d) => d.label === 'Tue')!.totalPnl).toBeCloseTo(225, 6);
+  });
+
+  it('reports null $ when no rows are priced', () => {
+    const unpriced = dayOfWeekBreakdown(deriveRows([mk(1, '2024-01-01', 0.1, 0.2)].map((r) => ({ ...r, refPrice: null })), SAMPLE_CFG), 0.1);
+    expect(unpriced[0].totalPnl).toBeNull();
   });
 });

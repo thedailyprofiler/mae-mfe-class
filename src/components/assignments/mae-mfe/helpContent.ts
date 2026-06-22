@@ -62,6 +62,7 @@ export const HELP_GROUPS: HelpGroup[] = [
       { id: 'profitMfe', term: 'Profit · MFE', body: 'Distribution of your favorable excursions — average, median, 30th percentile, and the "key" MFE.' },
       { id: 'cashflowEv', term: 'Cashflow EVs', body: 'Expected $ per trade at high-probability, medium, and high-EV target choices — a quick read on which target pays best.' },
       { id: 'mfeStrikeRates', term: 'MFE Strike Rates', body: 'For each MFE target: how often trades reached it (strike rate), the loss rate, the win $ at that target, and the total potential $.' },
+      { id: 'dayOfWeek', term: 'By Day of Week', body: 'How this move plays out on each weekday under your current rule (win = MFE ≥ Min Cashflow, else −MAE capped at Max MAE): trades (N), win rate, average per-trade result %, and total $. The ◄ marks the best win-rate day. Multi-attempt days count each attempt. Updates live as you change Min Cashflow / Max MAE.' },
       { id: 'maeRiskLadder', term: 'MAE Risk Ladder', body: 'For each MAE threshold: how many trades went beyond it, the rate, and the $ exposure that drawdown represents.' },
       { id: 'contractDollarMove', term: 'Contract $ / Move', body: 'The dollar value of each % move at your current contract size — loss $ and win $.' },
       { id: 'evMatrix', term: 'EV Risk Matrix', body: 'Expected $ per trade for each (MFE target ↓, MAE stop →) pair: P(hit MFE)×$target − P(hit MAE)×$stop. Green = positive expectancy.' },

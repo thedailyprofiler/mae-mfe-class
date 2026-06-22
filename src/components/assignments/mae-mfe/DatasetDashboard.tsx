@@ -184,6 +184,46 @@ export function DashboardCore({ dashboard: d }: { dashboard: DashType }) {
           </tbody>
         </table>
       </div>
+
+      {/* By Day of Week — how this move + its win/stop rule plays out per weekday */}
+      {d.dayOfWeek.length > 0 && (() => {
+        const bestWin = Math.max(...d.dayOfWeek.map((w) => w.winRate));
+        return (
+          <div className="border-t border-[var(--color-border)] pt-3.5">
+            <SectionLabel info="dayOfWeek">By Day of Week</SectionLabel>
+            <table className="w-full text-[12px] tabular-nums">
+              <thead>
+                <tr>
+                  <th className={`${TH} text-left w-12`}>Day</th>
+                  <th className={`${TH} text-right w-9`}>N</th>
+                  <th className={`${TH} text-left`}>Win Rate</th>
+                  <th className={`${TH} text-right w-16`}>Avg</th>
+                  <th className={`${TH} text-right w-20`}>Total $</th>
+                </tr>
+              </thead>
+              <tbody>
+                {d.dayOfWeek.map((w) => {
+                  const best = w.winRate === bestWin && d.dayOfWeek.length > 1;
+                  return (
+                    <tr key={w.dow}>
+                      <td className={`py-[4px] pr-2 font-[var(--font-mono)] uppercase ${best ? 'text-[var(--color-accent)] font-semibold' : 'text-[var(--color-text-secondary)]'}`}>{w.label}{best ? ' ◄' : ''}</td>
+                      <td className="py-[4px] text-right font-[var(--font-mono)] text-[var(--color-text-muted)]">{w.n}</td>
+                      <td className="py-[4px] pr-3">
+                        <div className="relative h-[14px] bg-[var(--color-bg-secondary)] rounded-[2px] overflow-hidden">
+                          <div className="absolute inset-y-0 left-0 rounded-[2px]" style={{ width: `${w.winRate * 100}%`, background: w.winRate >= 0.5 ? 'linear-gradient(90deg, rgba(34,197,94,0.35), rgba(34,197,94,0.75))' : 'linear-gradient(90deg, rgba(239,68,68,0.3), rgba(239,68,68,0.65))' }} />
+                          <span className="absolute inset-y-0 left-1.5 flex items-center text-[10px] font-[var(--font-mono)] font-semibold text-white/90">{(w.winRate * 100).toFixed(0)}%</span>
+                        </div>
+                      </td>
+                      <td className="py-[4px] text-right font-[var(--font-mono)]" style={{ color: w.avgPct >= 0 ? 'var(--color-success)' : 'var(--color-error)' }}>{w.avgPct >= 0 ? '+' : ''}{w.avgPct.toFixed(2)}%</td>
+                      <td className={`py-[4px] text-right font-[var(--font-mono)] ${w.totalPnl === null ? 'text-[var(--color-text-muted)]' : dollarTone(w.totalPnl)}`}>{w.totalPnl === null ? '—' : fmtDollars(w.totalPnl)}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        );
+      })()}
     </div>
   );
 }

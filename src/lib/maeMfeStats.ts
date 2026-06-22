@@ -379,11 +379,58 @@ export interface DatasetDashboard {
     months: number | null;
   };
   netCashflow: number;                // I78 = SUM(E:E)
+  dayOfWeek: DowStat[];               // per-weekday breakdown at this move's win/stop rule
+}
+
+/** How a move + its Min Cashflow / Max MAE rule plays out on each weekday. */
+export interface DowStat {
+  dow: number;             // 0=Sun … 6=Sat
+  label: string;           // 'Mon' …
+  n: number;               // trades on this weekday
+  wins: number;
+  winRate: number;         // 0..1
+  avgPct: number;          // mean per-trade result % under the sync contract (+minCf win / −MAE loss)
+  totalPnl: number | null; // sum of netCashflow $ (null when no priced rows)
 }
 
 // =============================================================================
 // Dashboard computation
 // =============================================================================
+
+const DOW_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+/** Weekday (0=Sun..6=Sat) for an ISO date, read at noon UTC (matches tradingCalendar). */
+function dowOf(iso: string | null): number | null {
+  if (!iso) return null;
+  const d = new Date(`${iso}T12:00:00Z`);
+  return Number.isNaN(d.getTime()) ? null : d.getUTCDay();
+}
+
+/**
+ * Group derived trades by weekday and summarize how the move + its Min Cashflow /
+ * Max MAE rule played out each day. Multi-attempt rows count individually (each is
+ * a trade). Weekdays with no trades are omitted.
+ */
+export function dayOfWeekBreakdown(derived: DerivedRow[], minCashflowPct: number): DowStat[] {
+  const byDow = new Map<number, DerivedRow[]>();
+  for (const r of derived) {
+    const w = dowOf(r.tradeDate);
+    if (w === null) continue;
+    const arr = byDow.get(w);
+    if (arr) arr.push(r); else byDow.set(w, [r]);
+  }
+  const out: DowStat[] = [];
+  for (let w = 0; w <= 6; w++) {
+    const rows = byDow.get(w);
+    if (!rows || rows.length === 0) continue;
+    const n = rows.length;
+    const wins = rows.filter((r) => r.isWin).length;
+    const avgPct = rows.reduce((s, r) => s + (r.isWin ? minCashflowPct : -r.maePct), 0) / n;
+    const priced = rows.some((r) => r.netCashflow !== null);
+    const totalPnl = priced ? rows.reduce((s, r) => s + (r.netCashflow ?? 0), 0) : null;
+    out.push({ dow: w, label: DOW_LABELS[w], n, wins, winRate: wins / n, avgPct, totalPnl });
+  }
+  return out;
+}
 
 export function computeDatasetDashboard(
   rows: RawRow[],
@@ -565,6 +612,7 @@ export function computeDatasetDashboard(
     evMatrix,
     timeAnchor: { firstDate, lastDate, days, months },
     netCashflow: totalPnl,
+    dayOfWeek: dayOfWeekBreakdown(derived, ds.minCashflowPct),
   };
 }
 
