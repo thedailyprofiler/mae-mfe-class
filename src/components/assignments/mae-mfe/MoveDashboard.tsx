@@ -232,7 +232,19 @@ export function MoveDashboard({
   // Multi-attempt-per-day lens — PERSISTED in the move's config so it carries
   // from Step 2 into the analysis labs (Monte Carlo / Correlation / Prop Sim).
   const attemptMode = useMemo<AttemptMode>(() => moveState.attemptMode ?? { kind: 'all' }, [moveState.attemptMode]);
-  const filtAttempts = useCallback((rows: RawRow[]) => applyAttemptFilter(rows, attemptMode), [attemptMode]);
+  // DOW filter — keep only the selected weekday(s). A view lens: no selection = all
+  // days; it never deletes rows, and flows into every stat, the trade log, and the
+  // By-Day-of-Week breakdown because it's folded into the row-prep below.
+  const [dowFilter, setDowFilter] = useState<Set<number>>(new Set());
+  const filtAttempts = useCallback((rows: RawRow[]) => {
+    const att = applyAttemptFilter(rows, attemptMode);
+    if (dowFilter.size === 0) return att;
+    return att.filter((r) => {
+      if (!r.tradeDate) return false;
+      const w = new Date(`${r.tradeDate}T12:00:00Z`).getUTCDay(); // noon UTC, matches tradingCalendar
+      return dowFilter.has(w);
+    });
+  }, [attemptMode, dowFilter]);
   const [allIncludes, setAllIncludes] = useState<AllInclude>({
     inSample: true,
     oos1: true,
@@ -505,6 +517,28 @@ export function MoveDashboard({
             <option value="only:3">Only 3rd</option>
             <option value="only:4">Only 4th</option>
           </select>
+        </ConfigField>
+        <ConfigField label="DOW" info="dow">
+          <div className="flex items-center gap-1">
+            {([[1, 'Mon'], [2, 'Tue'], [3, 'Wed'], [4, 'Thu'], [5, 'Fri']] as const).map(([d, lbl]) => {
+              const on = dowFilter.has(d);
+              return (
+                <button
+                  key={d}
+                  type="button"
+                  disabled={readOnly}
+                  onClick={() => setDowFilter((s) => { const n = new Set(s); if (n.has(d)) n.delete(d); else n.add(d); return n; })}
+                  data-testid={`mae-mfe-dow-${d}`}
+                  aria-pressed={on}
+                  className={['px-2 py-[5px] rounded-[4px] border text-[10px] font-[var(--font-mono)] font-semibold uppercase tracking-[0.08em] transition-colors', on ? 'border-[var(--color-accent)] bg-[var(--color-accent)]/15 text-[var(--color-accent)]' : 'border-[var(--color-border)] text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)]'].join(' ')}>
+                  {lbl}
+                </button>
+              );
+            })}
+            {dowFilter.size > 0 && (
+              <button type="button" onClick={() => setDowFilter(new Set())} className="text-[9px] text-[var(--color-text-muted)] hover:text-[var(--color-accent)] ml-0.5" title="Clear DOW filter">clear</button>
+            )}
+          </div>
         </ConfigField>
         <span className="w-px self-stretch bg-[var(--color-border)] mx-1" aria-hidden />
         <ConfigField label="In-Sample Start" width="156px">

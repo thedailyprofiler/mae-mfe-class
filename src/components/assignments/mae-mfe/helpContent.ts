@@ -32,6 +32,7 @@ export const HELP_GROUPS: HelpGroup[] = [
       { id: 'minCashflow', term: 'Min Cashflow %', body: 'The MFE target you would bank as a win. A trade counts as a WIN when its MFE ≥ this value; it drives the win/loss flag, total P&L, and the Compare deltas.' },
       { id: 'maxMae', term: 'Max MAE %', body: 'Your stop. It never cancels a win — a trade whose MFE hit Min Cashflow stays a win (the target was reached before invalidation). It only protects LOSERS: a losing trade whose MAE exceeds this value has its loss capped here, so you can never lose more than Max MAE. 0 = no stop. Affects total P&L and the Compare deltas.' },
       { id: 'attempts', term: 'Attempts / Day', body: 'Which same-day re-entries to count: All, 1st only, First N (took N entries that day), or Only the Nth (e.g. just the 2nd attempt). A view lens — it never deletes rows.' },
+      { id: 'dow', term: 'DOW (day of week)', body: 'Keep only the selected weekday(s) — e.g. just Mondays, or Tue+Thu. No selection = all days. A view lens that never deletes rows: every stat, the trade log, and the By-Day-of-Week breakdown update to the chosen days. Press “clear” to reset.' },
       { id: 'inSampleStart', term: 'In-Sample Start', body: 'The first trade date of the in-sample window. Trades auto-step along the move’s trading calendar from here.' },
     ],
   },
