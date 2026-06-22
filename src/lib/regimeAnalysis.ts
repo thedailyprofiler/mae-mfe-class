@@ -43,6 +43,35 @@ export const REGIME_META: Record<string, { label: string; tone: string }> = {
 // Sorted regime dates for the prior-session lookup (built once).
 const SORTED_DATES = Object.keys(VOL_REGIME).sort();
 
+/** Plain-language, beginner-friendly definition of each vol state (also feeds video scripts). */
+// Each definition ends with what it's built from + the exact calculation, for the videos.
+const MCS_CALC =
+  ' • Built from: VVIX (the “vol of vol” — implied volatility of the VIX). Calc: a Momentum-Change Score = 0.7×slope(3-day) + 0.3×ROC(21-day), then EMA(3)-smoothed, then ranked against its own trailing-252-day percentiles — so the bands are relative, not fixed levels. Uses the prior session’s value (no lookahead).';
+const TS_CALC =
+  ' • Built from: the VIX term structure — VIX9D (9-day) vs VIX (30-day). Calc: spread = VIX9D − VIX; spread < 0 → Contango (up-sloping/calm), spread > 0 → Backwardation (inverted/stress). Uses the prior session’s value (no lookahead).';
+export const REGIME_DEF: Record<string, string> = {
+  CONTRACTING:
+    'Volatility is calming down. The market is getting quieter — daily swings shrink and price tends to chop in tighter ranges. Breakouts run less far and fake out more often, so big winners are rarer. The calmest conditions to trade.'
+    + ' Here it means the VVIX momentum score is below its trailing-year median.' + MCS_CALC,
+  EXPANDING:
+    'Volatility is building up. Fear and uncertainty are rising and daily swings get bigger. Breakouts can run much farther (bigger wins) but also whip harder against you first (bigger drawdowns) — and losing streaks tend to bunch up here. Trade smaller and give winners room.'
+    + ' Here it means the VVIX momentum score is at or above its trailing-year median.' + MCS_CALC,
+  STABLE:
+    'Volatility is steady — neither clearly rising nor falling. A quiet, in-between state. It is a narrow window with few days, so treat its numbers as a rough hint and lean on the Expanding/Contracting view for decisions.'
+    + ' Here it means the VVIX momentum score sits in the middle 40th–60th percentile band.' + MCS_CALC,
+  CONTANGO:
+    'The "normal" calm setup: traders expect the next few days to be calmer than the next month, so the volatility curve slopes up. This is the market\'s usual state — about 80% of the time.'
+    + TS_CALC,
+  BACKWARDATION:
+    'A stress signal: traders fear the next few days MORE than the next month, so the volatility curve flips (inverts). It happens about 20% of the time and is where sharp drops and crashes cluster. Handle with care — size down or stand aside.'
+    + TS_CALC,
+};
+
+/** Every date the regime occurred on the chosen axis (the sessions to collect for it). */
+export function regimeDates(axis: RegimeAxis, regime: string): string[] {
+  return SORTED_DATES.filter((d) => VOL_REGIME[d][axis] === regime);
+}
+
 /** Regime in force for a trade on `iso`, using the PRIOR session's value (no lookahead). */
 export function regimeFor(iso: string | null, axis: RegimeAxis): string {
   if (!iso) return 'UNKNOWN';
@@ -53,6 +82,23 @@ export function regimeFor(iso: string | null, axis: RegimeAxis): string {
   }
   if (lo === 0) return 'UNKNOWN';
   return VOL_REGIME[SORTED_DATES[lo - 1]][axis];
+}
+
+/**
+ * Contiguous date windows for a regime (vol clusters, so these are multi-day runs)
+ * — the "dates to collect" for building that regime's out-of-sample set. Sorted
+ * longest-first. Covers the bundled regime history (2024-01-01+ by default).
+ */
+export function regimeWindows(axis: RegimeAxis, regime: string): { start: string; end: string; days: number }[] {
+  const runs: { start: string; end: string; days: number }[] = [];
+  let cur: { start: string; end: string; days: number } | null = null;
+  for (const d of SORTED_DATES) {
+    if (VOL_REGIME[d][axis] === regime) {
+      if (cur) { cur.end = d; cur.days += 1; } else cur = { start: d, end: d, days: 1 };
+    } else if (cur) { runs.push(cur); cur = null; }
+  }
+  if (cur) runs.push(cur);
+  return runs.sort((a, b) => b.days - a.days);
 }
 
 /** Wilson score 95% interval for a binomial proportion (good for small n / extreme p). */

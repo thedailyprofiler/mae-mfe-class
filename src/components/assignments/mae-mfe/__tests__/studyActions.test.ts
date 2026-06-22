@@ -133,3 +133,24 @@ describe('study actions (Phase 3)', () => {
     });
   });
 });
+
+describe('SEED_DATES action', () => {
+  it('bulk-adds empty rows per date, sorted, and dedupes on re-seed', () => {
+    let doc = hydrateDocument(undefined);
+    doc = documentReducer(doc, { type: 'SEED_DATES', asset: 'MNQ', move: '1800', sample: 'oos1', dates: ['2026-03-03', '2026-03-01', '2026-03-02'] });
+    let rows = doc.MNQ['1800'].oos1.rows;
+    expect(rows.map((r) => r.tradeDate)).toEqual(['2026-03-01', '2026-03-02', '2026-03-03']); // sorted
+    expect(rows.every((r) => r.maePct === 0 || Number.isFinite(r.maePct))).toBe(true);
+    // Re-seed overlapping + new dates → only the genuinely new one is appended.
+    doc = documentReducer(doc, { type: 'SEED_DATES', asset: 'MNQ', move: '1800', sample: 'oos1', dates: ['2026-03-02', '2026-03-05'] });
+    rows = doc.MNQ['1800'].oos1.rows;
+    expect(rows.map((r) => r.tradeDate)).toEqual(['2026-03-01', '2026-03-02', '2026-03-03', '2026-03-05']);
+    // unique rowIndexes
+    expect(new Set(rows.map((r) => r.rowIndex)).size).toBe(rows.length);
+  });
+  it('seeding an empty date list adds no rows', () => {
+    const doc = hydrateDocument(undefined);
+    const next = documentReducer(doc, { type: 'SEED_DATES', asset: 'MNQ', move: '1800', sample: 'oos1', dates: [] });
+    expect(next.MNQ['1800'].oos1.rows).toHaveLength(0);
+  });
+});

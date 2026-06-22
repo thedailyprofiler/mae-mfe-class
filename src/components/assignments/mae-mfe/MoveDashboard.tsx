@@ -18,10 +18,11 @@ import {
   type RawRow,
 } from '../../../lib/maeMfeStats';
 import { assetCloseForDate, type AssetSpec } from '../../../lib/assets';
-import { getMoveLabel } from '../../../lib/moveRegistry';
+import { getMoveLabel, getMoveWeekdays } from '../../../lib/moveRegistry';
 import { InfoTip } from './InfoTip';
 import { firstTradingDateOnOrAfter, nextTradingDate } from '../../../lib/tradingCalendar';
 import { DashboardBand, DashboardCore, RegimeBreakdownPanel } from './DatasetDashboard';
+import { REGIME_ORDER, REGIME_META, REGIME_DEF, regimeWindows, regimeDates, type RegimeAxis } from '../../../lib/regimeAnalysis';
 import { ComparePanel } from './ComparePanel';
 import { RowTable } from './RowTable';
 import { VideoButton, type DeepDiveSlug } from './SectionVideo';
@@ -86,6 +87,8 @@ export interface MoveDashboardProps {
   onAddRow: (sample: SampleKey, tradeDate: string) => void;
   onUpdateRow: (sample: SampleKey, rowIndex: number, patch: Partial<RawRow>) => void;
   onDeleteRow: (sample: SampleKey, rowIndex: number) => void;
+  /** Bulk-seed empty rows for a list of dates (the regime's sessions to collect). */
+  onSeedDates?: (sample: SampleKey, dates: string[]) => void;
   readOnly?: boolean;
   /** Rendered ABOVE the config row (the auto recommender). */
   topSlot?: ReactNode;
@@ -98,6 +101,7 @@ export interface MoveDashboardProps {
 }
 
 const OOS_LABELS: Record<OosKey, string> = { oos1: 'OOS 1', oos2: 'OOS 2', oos3: 'OOS 3' };
+const OOS_AXIS_SHORT: Record<RegimeAxis, string> = { vol2: 'Exp/Con', vol3: '+Stable', ts: 'Term' };
 
 // Which datasets the ALL view combines (default: everything).
 type AllInclude = Record<'inSample' | OosKey, boolean>;
@@ -214,6 +218,7 @@ export function MoveDashboard({
   onAddRow,
   onUpdateRow,
   onDeleteRow,
+  onSeedDates,
   topSlot,
   onApplyConfig,
   riskReadout,
@@ -227,7 +232,10 @@ export function MoveDashboard({
   const { inSample } = study;
 
   // ── Ephemeral view state ────────────────────────────────────────
-  const [activeOos, setActiveOos] = useState<OosKey>('oos1');
+  const [activeOos] = useState<OosKey>('oos1'); // single OOS storage bucket; regime is a view, not a slot
+  // OUT-OF-SAMPLE picker = vol regime to collect (axis + regime), drives the "dates to collect" prefill.
+  const [oosAxis, setOosAxis] = useState<RegimeAxis>('vol2');
+  const [oosRegime, setOosRegime] = useState<string>('EXPANDING');
   const [compareTarget, setCompareTarget] = useState<CompareTarget>('oos1');
   // Multi-attempt-per-day lens — PERSISTED in the move's config so it carries
   // from Step 2 into the analysis labs (Monte Carlo / Correlation / Prop Sim).
@@ -553,7 +561,7 @@ export function MoveDashboard({
           />
         </ConfigField>
         {oosActive && (
-          <ConfigField label={`${OOS_LABELS[activeOos]} Start`} width="156px">
+          <ConfigField label={`${REGIME_META[oosRegime]?.label ?? 'OOS'} Start`} width="156px" info="oosRegimeCollect">
             <input
               type="date"
               value={study[activeOos].startDate ?? ''}
@@ -592,15 +600,17 @@ export function MoveDashboard({
         <div className="flex items-center gap-3 px-5 py-2 border-b border-[var(--color-border)] bg-[var(--color-bg-secondary)]/40">
           {oosActive && (
             <>
-              <span className="text-[9px] font-[var(--font-mono)] uppercase tracking-[0.16em] text-[var(--color-text-muted)]">
-                Window
-              </span>
-              <Segmented
-                testidPrefix="mae-mfe-oos-pick"
-                value={activeOos}
-                onChange={setActiveOos}
-                options={OOS_KEYS.map((k) => ({ id: k, label: OOS_LABELS[k] }))}
-              />
+              <span className="text-[9px] font-[var(--font-mono)] uppercase tracking-[0.16em] text-[var(--color-text-muted)]">Collect for</span>
+              {(['vol2', 'vol3', 'ts'] as RegimeAxis[]).map((ax) => (
+                <button key={ax} type="button" onClick={() => { setOosAxis(ax); const rg0 = REGIME_ORDER[ax][0]; setOosRegime(rg0); const w = regimeWindows(ax, rg0)[0]; if (w) onSetStartDate(activeOos, w.start); }} aria-pressed={oosAxis === ax}
+                  className={`px-2 py-[4px] rounded-[4px] border text-[9px] font-[var(--font-mono)] uppercase tracking-[0.1em] transition-colors ${oosAxis === ax ? 'border-[var(--color-accent)] bg-[var(--color-accent)]/15 text-[var(--color-accent)]' : 'border-[var(--color-border)] text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)]'}`}>{OOS_AXIS_SHORT[ax]}</button>
+              ))}
+              <span className="w-px self-stretch bg-[var(--color-border)]" aria-hidden />
+              {REGIME_ORDER[oosAxis].map((rg) => (
+                <button key={rg} type="button" onClick={() => { setOosRegime(rg); const w = regimeWindows(oosAxis, rg)[0]; if (w) onSetStartDate(activeOos, w.start); }} aria-pressed={oosRegime === rg}
+                  className={`px-2.5 py-[4px] rounded-[4px] border text-[10px] font-[var(--font-mono)] uppercase tracking-[0.1em] transition-colors ${oosRegime === rg ? 'border-[var(--color-accent)] bg-[var(--color-accent)]/15' : 'border-[var(--color-border)] text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)]'}`}
+                  style={oosRegime === rg ? { color: REGIME_META[rg].tone } : undefined}>{REGIME_META[rg]?.label ?? rg}</button>
+              ))}
             </>
           )}
           {all && (
@@ -646,6 +656,37 @@ export function MoveDashboard({
           )}
         </div>
       )}
+
+      {/* ─── OOS REGIME — plain-language definition + "drop the dates into the log" ─ */}
+      {oosActive && (() => {
+        const meta = REGIME_META[oosRegime] ?? { label: oosRegime, tone: 'var(--color-text-secondary)' };
+        const def = REGIME_DEF[oosRegime] ?? '';
+        // The regime's sessions that this move actually trades (its weekday set).
+        const wkdays = new Set(getMoveWeekdays(move));
+        const dates = regimeDates(oosAxis, oosRegime).filter((d) => wkdays.has(new Date(`${d}T12:00:00Z`).getUTCDay()));
+        const have = new Set((study[activeOos].rows ?? []).map((r) => r.tradeDate));
+        const toAdd = dates.filter((d) => !have.has(d));
+        return (
+          <div className="px-5 py-2.5 border-b border-[var(--color-border)] bg-[var(--color-bg-secondary)]/30">
+            <div className="flex items-start gap-3">
+              <div className="flex-1 min-w-0">
+                <div className="text-[10px] mb-0.5"><span className="font-semibold uppercase tracking-wide" style={{ color: meta.tone }}>{meta.label}</span> <span className="text-[var(--color-text-muted)]">— what this means</span></div>
+                <p className="text-[10px] text-[var(--color-text-secondary)] leading-relaxed">{def}</p>
+              </div>
+              {onSeedDates && (
+                <div className="shrink-0 text-right">
+                  <button type="button" disabled={readOnly || toAdd.length === 0}
+                    onClick={() => onSeedDates(activeOos, dates)}
+                    className="text-[10px] px-3 py-1.5 rounded-[6px] border border-[var(--color-accent)] text-[var(--color-accent)] hover:bg-[var(--color-accent)]/10 disabled:opacity-40 uppercase tracking-[0.1em] whitespace-nowrap">
+                    + Add {toAdd.length} dates to log
+                  </button>
+                  <div className="text-[8px] text-[var(--color-text-muted)] mt-1 max-w-[180px] leading-snug">{dates.length} {meta.label} sessions this move trades. They drop into the log dated &amp; empty — then collect/fill MAE·MFE.</div>
+                </div>
+              )}
+            </div>
+          </div>
+        );
+      })()}
 
       {/* ─── TICKER — active selection ─────────────────────────────── */}
       <div className="flex items-stretch divide-x divide-[var(--color-border)] border-b border-[var(--color-border)] bg-[var(--color-bg-secondary)]/60">

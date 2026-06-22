@@ -650,6 +650,9 @@ export function MaeMfeAnalysisView({
         onDeleteRow={(sample, rowIndex) =>
           dispatch({ type: 'DELETE_ROW', asset: activeAsset, move: safeMove, study: safeStudy, sample, rowIndex })
         }
+        onSeedDates={(sample, dates) =>
+          dispatch({ type: 'SEED_DATES', asset: activeAsset, move: safeMove, study: safeStudy, sample, dates })
+        }
       />
       </StepBar>
 

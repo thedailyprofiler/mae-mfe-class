@@ -32,6 +32,7 @@ export type Action =
   | { type: 'PATCH_CONFIG'; asset: AssetTicker; move: GunshipMove; patch: Partial<Pick<MoveState, 'minCashflowPct' | 'defaultContracts' | 'maxMaePct' | 'attemptMode'>>; userSet?: boolean }
   | { type: 'SET_START_DATE'; asset: AssetTicker; move: GunshipMove; study?: string; sample: SampleKey; startDate: string | null }
   | { type: 'ADD_ROW'; asset: AssetTicker; move: GunshipMove; study?: string; sample: SampleKey; tradeDate: string }
+  | { type: 'SEED_DATES'; asset: AssetTicker; move: GunshipMove; study?: string; sample: SampleKey; dates: string[] }
   | { type: 'UPDATE_ROW'; asset: AssetTicker; move: GunshipMove; study?: string; sample: SampleKey; rowIndex: number; patch: Partial<RawRow> }
   | { type: 'DELETE_ROW'; asset: AssetTicker; move: GunshipMove; study?: string; sample: SampleKey; rowIndex: number }
   // Study-management — scoped to one (asset, move).
@@ -224,6 +225,19 @@ function moveReducer(state: MaeMfeState, action: MoveAction): MaeMfeState {
       const bucket = getBucket(move, study, action.sample);
       const nextIndex = bucket.rows.length === 0 ? 1 : bucket.rows[bucket.rows.length - 1].rowIndex + 1;
       const rows = [...bucket.rows, makeRow(nextIndex, move.defaultContracts, action.tradeDate)];
+      return { ...state, [action.move]: setBucket(move, study, action.sample, { ...bucket, rows }) };
+    }
+    case 'SEED_DATES': {
+      // Bulk-add an empty row per date (deduped against existing trade dates) — the
+      // regime's sessions to collect, dropped into the log ready to fill.
+      const study = action.study ?? DEFAULT_STUDY;
+      const bucket = getBucket(move, study, action.sample);
+      const have = new Set(bucket.rows.map((r) => r.tradeDate).filter(Boolean));
+      const fresh = action.dates.filter((d) => !have.has(d)).sort();
+      if (fresh.length === 0) return state;
+      let idx = bucket.rows.length === 0 ? 0 : bucket.rows[bucket.rows.length - 1].rowIndex;
+      const added = fresh.map((d) => makeRow(++idx, move.defaultContracts, d));
+      const rows = [...bucket.rows, ...added].sort((a, b) => (a.tradeDate ?? '').localeCompare(b.tradeDate ?? ''));
       return { ...state, [action.move]: setBucket(move, study, action.sample, { ...bucket, rows }) };
     }
     case 'UPDATE_ROW': {

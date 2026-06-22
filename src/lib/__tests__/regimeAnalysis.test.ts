@@ -1,6 +1,6 @@
 import { deriveRows, type DatasetConfig, type RawRow } from '../maeMfeStats';
 import { VOL_REGIME } from '../volRegime';
-import { regimeFor, wilson95, regimeBreakdown, REGIME_ORDER } from '../regimeAnalysis';
+import { regimeFor, wilson95, regimeBreakdown, regimeDates, REGIME_ORDER } from '../regimeAnalysis';
 
 const CFG: DatasetConfig = { id: 'x', gunshipMove: '1800', sampleType: 'IN_SAMPLE', minCashflowPct: 0.1, defaultContracts: 5, label: null };
 const DATES = Object.keys(VOL_REGIME).sort();
@@ -33,6 +33,17 @@ describe('regimeFor — no lookahead (prior-session value)', () => {
   it('returns UNKNOWN before the first regime date and for null', () => {
     expect(regimeFor('1990-01-01', 'vol2')).toBe('UNKNOWN');
     expect(regimeFor(null, 'vol2')).toBe('UNKNOWN');
+  });
+});
+
+describe('regimeDates', () => {
+  it('lists exactly the dates carrying that regime label, sorted, no overlap between regimes', () => {
+    const exp = regimeDates('vol2', 'EXPANDING');
+    const con = regimeDates('vol2', 'CONTRACTING');
+    expect(exp.length).toBeGreaterThan(0);
+    expect([...exp]).toEqual([...exp].sort()); // sorted
+    expect(exp.every((d) => VOL_REGIME[d].vol2 === 'EXPANDING')).toBe(true);
+    expect(exp.some((d) => con.includes(d))).toBe(false); // disjoint
   });
 });
 
