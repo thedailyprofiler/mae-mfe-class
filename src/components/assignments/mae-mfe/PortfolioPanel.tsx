@@ -203,6 +203,13 @@ export function PortfolioPanel({ doc, moves, onClose, acctRules, acctContracts, 
       <div className="flex items-center gap-1.5 mb-2">
         <span className="text-[11px] font-semibold text-[var(--color-text-primary)]">Build &amp; weight</span>
         <InfoTip id="pf-builder" />
+        <button
+          type="button"
+          onClick={() => { const inc: Record<string, boolean> = {}; for (const s of series) inc[s.key] = false; setIncluded(inc); setWeights({}); }}
+          className="ml-auto text-[10px] px-2.5 py-1 rounded-[5px] border border-[var(--color-border)] text-[var(--color-text-secondary)] hover:text-[var(--color-accent)] hover:border-[var(--color-accent)]/60 transition-colors"
+          title="Uncheck every move and zero all weights">
+          Clear all
+        </button>
       </div>
 
       <div className="flex flex-wrap gap-4">
