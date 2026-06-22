@@ -1,0 +1,56 @@
+WEBVTT
+
+1
+00:00:01.000 --> 00:00:06.000
+This is how you pick a move. You draw it.
+
+2
+00:00:06.000 --> 00:00:15.000
+The canvas is a timeline. Left to right is the time of day.
+Up and down is the size of the move, in basis points.
+
+3
+00:00:15.000 --> 00:00:25.000
+Drag a box over the window you trade. Its left edge and
+width set when the move starts and how long it runs.
+
+4
+00:00:25.000 --> 00:00:35.000
+The top and bottom set the size band. The dashed cutoff
+line is how long you keep watching it.
+
+5
+00:00:35.000 --> 00:00:45.000
+Let go, and the stats compute on release. Win rate, how
+often the structure held, and the typical move size.
+
+6
+00:00:45.000 --> 00:00:56.000
+Set your cashflow target up top. That's the move you're
+actually paid for, in percent.
+
+7
+00:00:56.000 --> 00:01:07.000
+Switch from Exact to Region and it scans every box inside
+your shape, then hands you the strongest one.
+
+8
+00:01:07.000 --> 00:01:18.000
+Turn signals on and drop a second box, the violet one,
+somewhere before your trade.
+
+9
+00:01:18.000 --> 00:01:30.000
+Now it measures the timing. When that signal fires first,
+does your win rate actually lift? The panel shows the
+before and after.
+
+10
+00:01:30.000 --> 00:01:42.000
+Filter by what the signal was doing at your entry, and
+rank the setups by how much lift they add.
+
+11
+00:01:42.000 --> 00:01:51.000
+Geometry in, edge out. That's the whole idea behind
+picking a move.
