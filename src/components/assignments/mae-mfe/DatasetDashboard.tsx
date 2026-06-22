@@ -10,7 +10,9 @@
  *                      EV heatmap. All three are 6-row tables, so the band
  *                      is a single aligned horizontal block.
  */
-import type { DatasetDashboard as DashType } from '../../../lib/maeMfeStats';
+import { useMemo, useState } from 'react';
+import type { DatasetDashboard as DashType, DerivedRow } from '../../../lib/maeMfeStats';
+import { regimeBreakdown, REGIME_META, MIN_TRUST, type RegimeAxis } from '../../../lib/regimeAnalysis';
 import { dollarTone, fmtDollars, fmtPct, fmtRatio } from './format';
 import { InfoTip } from './InfoTip';
 import { VideoButton, type DeepDiveSlug } from './SectionVideo';
@@ -368,6 +370,89 @@ export function DashboardBand({ dashboard: d }: { dashboard: DashType }) {
           </tbody>
         </table>
       </div>
+    </div>
+  );
+}
+
+// =============================================================================
+// By Vol Regime — per-(vol state) risk profile for one move
+// =============================================================================
+
+const REGIME_AXES: { id: RegimeAxis; label: string }[] = [
+  { id: 'vol2', label: 'Expanding / Contracting' },
+  { id: 'vol3', label: '+ Stable' },
+  { id: 'ts', label: 'Contango / Backwardation' },
+];
+
+/**
+ * How a move + its Min Cashflow / Max MAE rule plays out in each volatility
+ * state — the descriptive layer for building a per-regime risk profile.
+ * Win rate carries a Wilson 95% interval + a shrunk estimate; thin buckets
+ * (< MIN_TRUST trades) are flagged, not trusted. No-lookahead (prior session).
+ */
+export function RegimeBreakdownPanel({ derived, minCashflowPct }: { derived: DerivedRow[]; minCashflowPct: number }) {
+  const [axis, setAxis] = useState<RegimeAxis>('vol2');
+  const stats = useMemo(() => regimeBreakdown(derived, axis, minCashflowPct), [derived, axis, minCashflowPct]);
+  if (derived.length === 0) return null;
+  return (
+    <div className="border-t border-[var(--color-border)] pt-3.5 mt-4">
+      <div className="flex items-center gap-2 mb-2 flex-wrap">
+        <SectionLabel info="regimeBreakdown">By Vol Regime</SectionLabel>
+        <div className="flex items-center gap-1 ml-auto">
+          {REGIME_AXES.map((a) => (
+            <button key={a.id} type="button" onClick={() => setAxis(a.id)} aria-pressed={axis === a.id}
+              className={`px-2 py-[3px] rounded-[4px] border text-[9px] font-[var(--font-mono)] uppercase tracking-[0.08em] transition-colors ${axis === a.id ? 'border-[var(--color-accent)] bg-[var(--color-accent)]/15 text-[var(--color-accent)]' : 'border-[var(--color-border)] text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)]'}`}>
+              {a.label}
+            </button>
+          ))}
+        </div>
+      </div>
+      {stats.length === 0 ? (
+        <div className="text-[10px] text-[var(--color-text-secondary)] py-2">No regime data for these trade dates (dates outside the bundled vol history).</div>
+      ) : (
+        <table className="w-full text-[12px] tabular-nums">
+          <thead>
+            <tr>
+              <th className={`${TH} text-left w-28`}>Regime</th>
+              <th className={`${TH} text-right w-9`}>N</th>
+              <th className={`${TH} text-left`}>Win Rate (95% CI · shrunk)</th>
+              <th className={`${TH} text-right w-16`}>Avg</th>
+              <th className={`${TH} text-right w-14`}>MAE</th>
+              <th className={`${TH} text-right w-14`}>MFE</th>
+              <th className={`${TH} text-right w-20`}>Total $</th>
+            </tr>
+          </thead>
+          <tbody>
+            {stats.map((s) => {
+              const meta = REGIME_META[s.regime] ?? { label: s.regime, tone: 'var(--color-text-secondary)' };
+              return (
+                <tr key={s.regime} className={s.thin ? 'opacity-70' : undefined}>
+                  <td className="py-[4px] pr-2 font-[var(--font-mono)] uppercase" style={{ color: meta.tone }}>
+                    {meta.label}{s.thin && <span className="ml-1 text-[8px] text-[var(--color-text-muted)] normal-case tracking-normal" title={`Only ${s.n} trades (<${MIN_TRUST}) — directional only`}>· thin</span>}
+                  </td>
+                  <td className="py-[4px] text-right font-[var(--font-mono)] text-[var(--color-text-muted)]">{s.n}</td>
+                  <td className="py-[4px] pr-3">
+                    <div className="relative h-[14px] bg-[var(--color-bg-secondary)] rounded-[2px] overflow-hidden">
+                      {/* Wilson 95% band (light) with the shrunk estimate as the fill */}
+                      <div className="absolute inset-y-0 bg-[var(--color-text-muted)]/20" style={{ left: `${s.wilsonLo * 100}%`, width: `${(s.wilsonHi - s.wilsonLo) * 100}%` }} />
+                      <div className="absolute inset-y-0 left-0 rounded-[2px]" style={{ width: `${s.shrunkWinRate * 100}%`, background: s.winRate >= 0.5 ? 'linear-gradient(90deg, rgba(34,197,94,0.3), rgba(34,197,94,0.6))' : 'linear-gradient(90deg, rgba(239,68,68,0.25), rgba(239,68,68,0.55))' }} />
+                      <span className="absolute inset-y-0 left-1.5 flex items-center text-[10px] font-[var(--font-mono)] font-semibold text-white/90">
+                        {(s.winRate * 100).toFixed(0)}%
+                        <span className="ml-1 text-[8px] text-white/55">[{(s.wilsonLo * 100).toFixed(0)}–{(s.wilsonHi * 100).toFixed(0)}] →{(s.shrunkWinRate * 100).toFixed(0)}</span>
+                      </span>
+                    </div>
+                  </td>
+                  <td className="py-[4px] text-right font-[var(--font-mono)]" style={{ color: s.avgPct >= 0 ? 'var(--color-success)' : 'var(--color-error)' }}>{s.avgPct >= 0 ? '+' : ''}{s.avgPct.toFixed(2)}%</td>
+                  <td className="py-[4px] text-right font-[var(--font-mono)] text-[var(--color-text-secondary)]">{s.avgMae.toFixed(2)}%</td>
+                  <td className="py-[4px] text-right font-[var(--font-mono)] text-[var(--color-text-secondary)]">{s.avgMfe.toFixed(2)}%</td>
+                  <td className={`py-[4px] text-right font-[var(--font-mono)] ${s.totalPnl === null ? 'text-[var(--color-text-muted)]' : dollarTone(s.totalPnl)}`}>{s.totalPnl === null ? '—' : fmtDollars(s.totalPnl)}</td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      )}
+      <div className="text-[8px] text-[var(--color-text-muted)] mt-1.5 leading-snug">Win rate shows raw% [Wilson 95% range] →shrunk% (pulled toward this move's all-regime rate; thin buckets move most). Regime uses the prior session's value (no lookahead).</div>
     </div>
   );
 }

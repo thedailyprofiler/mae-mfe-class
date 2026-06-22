@@ -21,7 +21,7 @@ import { assetCloseForDate, type AssetSpec } from '../../../lib/assets';
 import { getMoveLabel } from '../../../lib/moveRegistry';
 import { InfoTip } from './InfoTip';
 import { firstTradingDateOnOrAfter, nextTradingDate } from '../../../lib/tradingCalendar';
-import { DashboardBand, DashboardCore } from './DatasetDashboard';
+import { DashboardBand, DashboardCore, RegimeBreakdownPanel } from './DatasetDashboard';
 import { ComparePanel } from './ComparePanel';
 import { RowTable } from './RowTable';
 import { VideoButton, type DeepDiveSlug } from './SectionVideo';
@@ -729,6 +729,8 @@ export function MoveDashboard({
           {/* ─── BAND B — ladder | contract | EV heatmap ─────────── */}
           <div className="px-5">
             <DashboardBand dashboard={activeDash} />
+            {/* By Vol Regime — per-(vol state) risk profile for the active dataset */}
+            <RegimeBreakdownPanel derived={activeDerived} minCashflowPct={minCashflowPct} />
           </div>
         </>
       )}

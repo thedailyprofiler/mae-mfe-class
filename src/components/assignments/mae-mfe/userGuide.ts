@@ -20,6 +20,8 @@ export const STEP_GUIDES: Record<number, { what: string; how: string[] }> = {
       '① pick an asset → ② pick a move → ③ set your risk.',
       '③ has two halves: "Let us select your risk" (recommendation cards — click Apply) or "You set your risk" (type it yourself; the bar shows your pass odds live).',
       'Min Cashflow = your take-profit target. Max MAE = your stop (off = take the full loss). Change either and the whole dashboard re-computes.',
+      'DOW filter: slice the stats to just the weekday(s) you trade. By Day of Week (under the strike rates) shows how each weekday performs.',
+      'By Vol Regime (under the analytics): see how the move performs when volatility is Expanding vs Contracting (or Contango vs Backwardation) — the start of building a per-regime risk profile. Win rates carry a confidence range and a shrunk estimate; "thin" buckets (<30 trades) are directional only.',
       'Any move you don\'t touch is auto-set to its own safest config.',
     ],
   },
