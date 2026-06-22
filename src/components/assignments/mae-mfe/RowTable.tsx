@@ -7,7 +7,7 @@
 import { useMemo, useState } from 'react';
 import { ChevronLeft, ChevronRight, CornerDownRight, Plus, SkipForward, Trash2 } from 'lucide-react';
 import type { DerivedRow, RawRow } from '../../../lib/maeMfeStats';
-import { dollarTone, fmtDollars } from './format';
+import { dollarTone, fmtDollars, weekdayAbbr } from './format';
 import { NumericInput } from './NumericInput';
 import { VideoButton, type DeepDiveSlug } from './SectionVideo';
 
@@ -169,16 +169,21 @@ export function RowTable({
                   {row.rowIndex}
                 </td>
                 <td className="py-[4px] px-1">
-                  <input
-                    type="date"
-                    value={row.tradeDate ?? ''}
-                    onChange={(e) =>
-                      onUpdateRow(row.rowIndex, { tradeDate: e.target.value || null })
-                    }
-                    disabled={readOnly}
-                    className={cellInput}
-                    style={{ colorScheme: 'dark' }}
-                  />
+                  <div className="flex items-center gap-1.5">
+                    <input
+                      type="date"
+                      value={row.tradeDate ?? ''}
+                      onChange={(e) =>
+                        onUpdateRow(row.rowIndex, { tradeDate: e.target.value || null })
+                      }
+                      disabled={readOnly}
+                      className={cellInput}
+                      style={{ colorScheme: 'dark' }}
+                    />
+                    {row.tradeDate && (
+                      <span className="text-[9px] font-[var(--font-mono)] uppercase tracking-wide text-[var(--color-text-muted)] shrink-0">{weekdayAbbr(row.tradeDate)}</span>
+                    )}
+                  </div>
                 </td>
                 <td className="py-[4px] px-1">
                   <NumericInput

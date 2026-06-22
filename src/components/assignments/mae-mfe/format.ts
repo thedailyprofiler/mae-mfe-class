@@ -36,6 +36,14 @@ export function fmtNumber(n: number | null | undefined, digits = 0): string {
   });
 }
 
+const DOW_ABBR = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+/** Weekday abbreviation for an ISO date (read at noon UTC, matching tradingCalendar). */
+export function weekdayAbbr(iso: string | null | undefined): string {
+  if (!iso) return '';
+  const d = new Date(`${iso}T12:00:00Z`);
+  return Number.isNaN(d.getTime()) ? '' : DOW_ABBR[d.getUTCDay()];
+}
+
 /** Tone class for $-tinted numbers — green for positive, red for negative. */
 export function dollarTone(n: number | null | undefined): string {
   if (n === null || n === undefined || !Number.isFinite(n)) {
