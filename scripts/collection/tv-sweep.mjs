@@ -9,7 +9,11 @@
  *   node scripts/collection/tv-sweep.mjs 0300MA --label "0300 Multiple Attempt" --multi
  *   node scripts/collection/tv-sweep.mjs 0300   --only MES,MYM,MCL,MGC,RTY   # skip MNQ (already done)
  *
+ *   # OOS by vol regime — collect a past window into an OOS bucket (year auto from --end):
+ *   node scripts/collection/tv-sweep.mjs 0300 --bucket oos1 --end 2024-08-23 --days 36 --merge
+ *
  * flags: --label TEXT  --multi  --days N (default 100)  --only A,B,...
+ *        --bucket oos1|oos2|oos3  --end YYYY-MM-DD (OOS window anchor)  --merge (accumulate)
  * env:   TV_MCP_DIR, TV_CDP_PORT (default 9333)
  */
 import { execFileSync } from 'node:child_process';
@@ -37,13 +41,17 @@ const LABEL = arg('--label', null);
 const MULTI = has('--multi');
 const DAYS = arg('--days', '100');
 const ONLY = arg('--only', null);
+const BUCKET = arg('--bucket', 'inSample');   // OOS collection: oos1|oos2|oos3
+const END = arg('--end', null);               // anchor an out-of-sample/past window at this date
+const MERGE = has('--merge');                 // accumulate into the bucket instead of replacing
+const YEAR = END ? END.slice(0, 4) : null;    // date MM/DD correctly for the OOS window's year
 const assets = (ONLY ? ONLY.split(',') : Object.keys(SYMBOLS)).map((s) => s.trim().toUpperCase());
 
 const tv = (...a) => { try { return execFileSync('node', [CLI, ...a], { cwd: TV_DIR, env: ENV, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }); } catch { return ''; } };
 const run = (script, ...a) => { try { return execFileSync('node', [join(HERE, script), ...a], { env: ENV, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }); } catch (e) { return (e.stdout || '') + (e.stderr || ''); } };
 const chartSymbol = () => { try { return JSON.parse(tv('status')).chart_symbol || ''; } catch { return ''; } };
 
-console.log(`tv-sweep "${MOVEKEY}"${LABEL ? ` (${LABEL})` : ''}${MULTI ? ' --multi' : ''} · ${DAYS}d · assets: ${assets.join(', ')}\n`);
+console.log(`tv-sweep "${MOVEKEY}"${LABEL ? ` (${LABEL})` : ''}${MULTI ? ' --multi' : ''} · ${DAYS}d${END ? ` · OOS→${BUCKET} end=${END} (yr ${YEAR})${MERGE ? ' merge' : ''}` : ''} · assets: ${assets.join(', ')}\n`);
 const results = [];
 for (const asset of assets) {
   const sym = SYMBOLS[asset];
@@ -52,8 +60,10 @@ for (const asset of assets) {
   tv('symbol', sym);
   await sleep(8000);                                   // let the new symbol's data load
   for (let i = 0; i < 6 && !chartSymbol().includes(sym.split(':')[1].replace('1!', '')); i++) await sleep(2000);
-  run('tv-collect.mjs', '--days', DAYS, '--out', WIN); // read-only replay walk-back
-  const loadArgs = ['tv-load.mjs', asset, MOVEKEY, '--in', WIN, ...(LABEL ? ['--label', LABEL] : []), ...(MULTI ? ['--multi'] : [])];
+  run('tv-collect.mjs', '--days', DAYS, '--out', WIN, ...(END ? ['--end', END] : [])); // read-only replay walk-back
+  const loadArgs = ['tv-load.mjs', asset, MOVEKEY, '--in', WIN, '--days', DAYS,
+    ...(LABEL ? ['--label', LABEL] : []), ...(MULTI ? ['--multi'] : []),
+    ...(BUCKET !== 'inSample' ? ['--bucket', BUCKET] : []), ...(YEAR ? ['--year', YEAR] : []), ...(MERGE ? ['--merge'] : [])];
   const out = run(...loadArgs);
   console.log('  ' + out.split('\n').filter(Boolean).slice(-2).join('\n  '));
   results.push(`${asset}: ${out.includes('200 OK') ? 'OK' : 'FAIL'}`);

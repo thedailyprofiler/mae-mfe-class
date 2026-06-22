@@ -33,6 +33,7 @@ const days = +arg('--days', 100);
 const hop = +arg('--hop', 14);
 const settle = +arg('--settle', 5000);
 const OUT = arg('--out', join(HERE, 'windows.jsonl'));
+const END = arg('--end', null); // anchor walk-back at this date (OOS/past window) instead of today
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const tv = (...a) => { try { return execFileSync('node', [CLI, ...a], { cwd: TV_DIR, env: ENV, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }); } catch { return ''; } };
@@ -48,12 +49,13 @@ function maeRows(jsonText) {
 }
 const readWindow = (label) => { const rows = maeRows(tv('data', 'tables')); appendFileSync(OUT, JSON.stringify({ label, rows }) + '\n'); console.log(`  ${label}: ${rows.length} rows`); };
 
-// Build backward hop dates from today (≈ days/9 windows + buffer).
+// Build backward hop dates from the anchor (today, or --end for a past window).
 function hopDates() {
   const n = Math.ceil(days / 9) + 1;
   const out = [];
-  const d = new Date();
-  for (let i = 0; i < n; i++) { d.setDate(d.getDate() - hop); out.push(d.toISOString().slice(0, 10)); }
+  const d = END ? new Date(`${END}T12:00:00Z`) : new Date();
+  if (END) out.push(d.toISOString().slice(0, 10)); // include the anchor (end) date itself
+  for (let i = 0; i < n; i++) { d.setUTCDate(d.getUTCDate() - hop); out.push(d.toISOString().slice(0, 10)); }
   return out;
 }
 
@@ -61,7 +63,7 @@ console.log(`tv-collect → ${OUT}\n  TV_DIR=${TV_DIR} port=${ENV.TV_CDP_PORT} d
 writeFileSync(OUT, '');
 
 tv('replay', 'stop'); await sleep(settle);
-readWindow('realtime');
+if (!END) readWindow('realtime'); // skip the live read when targeting a past/OOS window
 for (const date of hopDates()) {
   tv('replay', 'start', '--date', date); await sleep(settle);
   readWindow(date);

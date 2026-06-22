@@ -14,6 +14,10 @@
  *   --days N      keep the most recent N trading days (default 100)
  *   --api URL     dashboard API (default http://localhost:8787/api/doc?profile=default)
  *   --bucket B    target bucket: inSample|oos1|oos2|oos3 (default inSample)
+ *   --year YYYY   force the year for MM/DD dates (for OOS/past windows; default
+ *                 heuristic month≥7→2025 else 2026 only fits the in-sample period)
+ *   --merge       merge into the bucket by date (accumulate windows) instead of
+ *                 replacing it — new rows win on a shared date, others are kept
  *   --dry         parse + print stats, do not upload
  */
 import { readFileSync } from 'node:fs';
@@ -32,6 +36,8 @@ const MULTI = has('--multi');
 const KEEP = +arg('--days', 100);
 const API = arg('--api', 'http://localhost:8787/api/doc?profile=default');
 const BUCKET = arg('--bucket', 'inSample');
+const YEAR = arg('--year', null);
+const MERGE = has('--merge');
 const DRY = has('--dry');
 
 // Parse pipe-delimited Gunship rows; date is MM/DD (year: month ≥ 7 → 2025 else 2026).
@@ -43,7 +49,7 @@ for (const line of readFileSync(IN, 'utf8').split('\n')) {
     if (!/\d{2}\/\d{2}/.test(row)) continue;
     const dm = row.match(/(\d{2})\/(\d{2})/); if (!dm) continue;
     const [, mm, dd] = dm;
-    const date = `${+mm >= 7 ? 2025 : 2026}-${mm}-${dd}`;
+    const date = `${YEAR ?? (+mm >= 7 ? 2025 : 2026)}-${mm}-${dd}`;
     const parts = row.split('|');
     if (MULTI) {
       for (let i = 1; i < parts.length; i++) {
@@ -68,17 +74,31 @@ const avg = (a) => (a.reduce((s, x) => s + x, 0) / a.length).toFixed(3);
 console.log(`${ASSET}.${MOVEKEY}${LABEL ? ` (${LABEL})` : ''}: ${all.length} rows / ${keep.size} days | win@0.10 ${(100 * wins / all.length).toFixed(1)}% | avg MAE ${avg(all.map((r) => r.maePct))} MFE ${avg(all.map((r) => r.mfePct))}`);
 if (DRY) process.exit(0);
 
-const rows = all.map((r, i) => ({ rowIndex: i + 1, tradeDate: r.date, maePct: r.maePct, mfePct: r.mfePct, contracts: 5, refPrice: null }));
+const fresh = all.map((r) => ({ tradeDate: r.date, maePct: r.maePct, mfePct: r.mfePct, contracts: 5, refPrice: null }));
 const cur = await (await fetch(API)).json();
 const doc = cur.doc;
 doc[ASSET] = doc[ASSET] || {};
 const prev = doc[ASSET][MOVEKEY] || {};
 const empty = { startDate: null, rows: [] };
+const prevBucket = prev[BUCKET] ?? empty;
+
+// Merge: keep prior rows whose date the new window doesn't cover, then append the
+// new rows (new wins on a shared date). Replace (default): just the new rows.
+let bucketRows = fresh;
+if (MERGE) {
+  const freshDates = new Set(fresh.map((r) => r.tradeDate));
+  const kept = (prevBucket.rows ?? []).filter((r) => !freshDates.has(r.tradeDate));
+  bucketRows = [...kept, ...fresh];
+}
+const rows = bucketRows
+  .sort((a, b) => (a.tradeDate ?? '').localeCompare(b.tradeDate ?? ''))
+  .map((r, i) => ({ rowIndex: i + 1, ...r }));
+
 doc[ASSET][MOVEKEY] = {
   minCashflowPct: prev.minCashflowPct ?? 0.1, defaultContracts: prev.defaultContracts ?? 5, maxMaePct: prev.maxMaePct ?? 0,
   ...(LABEL ? { label: LABEL } : prev.label ? { label: prev.label } : {}),
   inSample: prev.inSample ?? empty, oos1: prev.oos1 ?? empty, oos2: prev.oos2 ?? empty, oos3: prev.oos3 ?? empty,
-  [BUCKET]: { startDate: null, rows },
+  [BUCKET]: { startDate: prevBucket.startDate ?? null, rows },
 };
 const res = await fetch(API, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ doc }) });
 console.log(`PUT → ${res.status} ${res.ok ? 'OK' : await res.text()} | ${ASSET} moves: ${Object.keys(doc[ASSET]).join(', ')}`);
